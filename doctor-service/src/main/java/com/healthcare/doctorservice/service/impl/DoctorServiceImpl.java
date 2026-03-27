@@ -54,7 +54,19 @@ public class DoctorServiceImpl implements DoctorService {
         existingDoctor.setEmail(doctor.getEmail());
         existingDoctor.setPhone(doctor.getPhone());
         existingDoctor.setAvailability(doctor.getAvailability());
+        // We preserve isAvailable state when performing a full PUT update
+        // (unless we also strictly want them to update isAvailable in the PUT too, but we are doing it via PATCH)
 
+        return doctorRepository.save(existingDoctor);
+    }
+
+    @Override
+    public Doctor updateDoctorAvailability(Long id, Boolean isAvailable) {
+        Doctor existingDoctor = doctorRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Doctor", "id", id)
+        );
+        
+        existingDoctor.setIsAvailable(isAvailable);
         return doctorRepository.save(existingDoctor);
     }
 

@@ -38,4 +38,7 @@ public class Doctor {
     private String phone;
 
     private String availability;
+
+    @Column(nullable = false)
+    private Boolean isAvailable = true;
 }

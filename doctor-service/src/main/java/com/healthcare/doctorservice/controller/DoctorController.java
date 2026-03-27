@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -43,6 +44,15 @@ public class DoctorController {
     public ResponseEntity<Doctor> updateDoctor(@PathVariable("id") Long doctorId,
                                                @Valid @RequestBody Doctor doctor) {
         Doctor updatedDoctor = doctorService.updateDoctor(doctor, doctorId);
+        return new ResponseEntity<>(updatedDoctor, HttpStatus.OK);
+    }
+
+    // Build Patch Doctor Availability REST API
+    @PatchMapping("{id}/availability")
+    public ResponseEntity<Doctor> updateDoctorAvailability(@PathVariable("id") Long doctorId,
+                                                           @RequestBody Map<String, Boolean> request) {
+        Boolean isAvailable = request.get("isAvailable");
+        Doctor updatedDoctor = doctorService.updateDoctorAvailability(doctorId, isAvailable);
         return new ResponseEntity<>(updatedDoctor, HttpStatus.OK);
     }
 
