@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import com.healthcare.appointmentservice.event.AppointmentCreatedEvent;
 
 import java.util.List;
 
@@ -23,6 +25,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final RestTemplate restTemplate;
+    private final KafkaTemplate<String, AppointmentCreatedEvent> kafkaTemplate;
 
     @Override
     public Appointment bookAppointment(Appointment appointment) {
@@ -76,6 +79,24 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setStatus("BOOKED");
         Appointment savedAppointment = appointmentRepository.save(appointment);
         log.info("Appointment booked successfully with ID: {}", savedAppointment.getId());
+
+        // 5. Publish Kafka Event (non-blocking - booking succeeds even if Kafka is temporarily unavailable)
+        try {
+            AppointmentCreatedEvent event = new AppointmentCreatedEvent(
+                    savedAppointment.getId(),
+                    savedAppointment.getPatientId(),
+                    savedAppointment.getDoctorId(),
+                    savedAppointment.getAppointmentDate()
+            );
+            kafkaTemplate.send("appointment-created", event);
+            log.info("Published appointment-created event for Appointment ID: {}", savedAppointment.getId());
+        } catch (Exception e) {
+            // Log the FULL stack trace (not just message) to expose the real root cause
+            log.error("Failed to publish Kafka event for Appointment ID: {}.", savedAppointment.getId(), e);
+            // We intentionally do NOT re-throw here — the appointment is already saved.
+            // Notification failure should not roll back a confirmed booking.
+        }
+
         return savedAppointment;
     }
 
