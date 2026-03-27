@@ -1,19 +1,22 @@
 package com.healthcare.appointmentservice.service.impl;
 
+import com.healthcare.appointmentservice.dto.DoctorDto;
+import com.healthcare.appointmentservice.dto.PatientDto;
 import com.healthcare.appointmentservice.entity.Appointment;
 import com.healthcare.appointmentservice.exception.DoctorNotAvailableException;
 import com.healthcare.appointmentservice.exception.ResourceNotFoundException;
 import com.healthcare.appointmentservice.repository.AppointmentRepository;
 import com.healthcare.appointmentservice.service.AppointmentService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Map;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class AppointmentServiceImpl implements AppointmentService {
@@ -23,39 +26,57 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public Appointment bookAppointment(Appointment appointment) {
+        log.info("Initiating booking for Patient ID: {} with Doctor ID: {}", appointment.getPatientId(), appointment.getDoctorId());
+
         // 1. Validate Patient via API call
         try {
-            restTemplate.getForEntity("http://localhost:8080/api/patients/" + appointment.getPatientId(), Object.class);
+            log.info("Calling patient-service to verify Patient ID: {}", appointment.getPatientId());
+            ResponseEntity<PatientDto> patientResponse = restTemplate.getForEntity("http://localhost:8080/api/patients/" + appointment.getPatientId(), PatientDto.class);
+            log.info("Patient verified successfully: {}", patientResponse.getBody().getName());
         } catch (HttpClientErrorException.NotFound e) {
+            log.error("Patient validation failed: HTTP 404 Not Found");
             throw new ResourceNotFoundException("Patient not found with ID: " + appointment.getPatientId());
         } catch (Exception e) {
+            log.error("Error communicating with patient-service: {}", e.getMessage());
             throw new RuntimeException("Error communicating with Patient Service: " + e.getMessage());
         }
 
         // 2. Validate Doctor via API call
         try {
-            ResponseEntity<Map> doctorResponse = restTemplate.getForEntity(
-                    "http://localhost:8081/api/doctors/" + appointment.getDoctorId(), Map.class);
+            log.info("Calling doctor-service to verify Doctor ID: {}", appointment.getDoctorId());
+            ResponseEntity<DoctorDto> doctorResponse = restTemplate.getForEntity(
+                    "http://localhost:8081/api/doctors/" + appointment.getDoctorId(), DoctorDto.class);
             
-            // Check availability - assuming doctor service returns an Object map matching Doctor entity
-            Map<String, Object> doctorBody = doctorResponse.getBody();
-            if (doctorBody != null) {
-                Boolean isAvailable = (Boolean) doctorBody.get("isAvailable");
-                if (isAvailable != null && !isAvailable) {
+            DoctorDto doctorDto = doctorResponse.getBody();
+            if (doctorDto != null) {
+                log.info("Doctor verified successfully: {}. Checking availability...", doctorDto.getName());
+                if (doctorDto.getIsAvailable() != null && !doctorDto.getIsAvailable()) {
+                    log.error("Doctor {} is not available for booking.", doctorDto.getName());
                     throw new DoctorNotAvailableException("Doctor is currently not available for new appointments.");
                 }
             }
         } catch (HttpClientErrorException.NotFound e) {
+            log.error("Doctor validation failed: HTTP 404 Not Found");
             throw new ResourceNotFoundException("Doctor not found with ID: " + appointment.getDoctorId());
         } catch (DoctorNotAvailableException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Error communicating with doctor-service: {}", e.getMessage());
             throw new RuntimeException("Error communicating with Doctor Service: " + e.getMessage());
         }
 
-        // 3. Save Appointment
+        // 3. Validate Time Slot Conflict
+        log.info("Checking for double booking on date: {}", appointment.getAppointmentDate());
+        if (appointmentRepository.existsByDoctorIdAndAppointmentDate(appointment.getDoctorId(), appointment.getAppointmentDate())) {
+            log.error("Double booking detected for Doctor ID {} at {}", appointment.getDoctorId(), appointment.getAppointmentDate());
+            throw new com.healthcare.appointmentservice.exception.TimeSlotAlreadyBookedException("Doctor already has an appointment at this exact time.");
+        }
+
+        // 4. Save Appointment
         appointment.setStatus("BOOKED");
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        log.info("Appointment booked successfully with ID: {}", savedAppointment.getId());
+        return savedAppointment;
     }
 
     @Override
