@@ -69,8 +69,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         // 3. Validate Time Slot Conflict
-        log.info("Checking for double booking on date: {}", appointment.getAppointmentDate());
-        if (appointmentRepository.existsByDoctorIdAndAppointmentDate(appointment.getDoctorId(), appointment.getAppointmentDate())) {
+        log.info("Checking for double booking on date: {} (ignoring cancelled)", appointment.getAppointmentDate());
+        if (appointmentRepository.existsByDoctorIdAndAppointmentDateAndStatusNot(appointment.getDoctorId(), appointment.getAppointmentDate(), "CANCELLED")) {
             log.error("Double booking detected for Doctor ID {} at {}", appointment.getDoctorId(), appointment.getAppointmentDate());
             throw new com.healthcare.appointmentservice.exception.TimeSlotAlreadyBookedException("Doctor already has an appointment at this exact time.");
         }
@@ -86,7 +86,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                     savedAppointment.getId(),
                     savedAppointment.getPatientId(),
                     savedAppointment.getDoctorId(),
-                    savedAppointment.getAppointmentDate()
+                    savedAppointment.getAppointmentDate().toString()
             );
             kafkaTemplate.send("appointment-created", event);
             log.info("Published appointment-created event for Appointment ID: {}", savedAppointment.getId());
