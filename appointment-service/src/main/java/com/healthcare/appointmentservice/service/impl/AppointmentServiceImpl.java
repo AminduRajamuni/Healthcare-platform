@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
-import com.healthcare.appointmentservice.event.AppointmentCreatedEvent;
+import com.healthcare.appointmentservice.event.AppointmentEvent;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 import java.util.List;
 
@@ -25,7 +27,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final RestTemplate restTemplate;
-    private final KafkaTemplate<String, AppointmentCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, AppointmentEvent> kafkaTemplate;
 
     @Override
     public Appointment bookAppointment(Appointment appointment) {
@@ -82,13 +84,16 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // 5. Publish Kafka Event (non-blocking - booking succeeds even if Kafka is temporarily unavailable)
         try {
-            AppointmentCreatedEvent event = new AppointmentCreatedEvent(
+            AppointmentEvent event = new AppointmentEvent(
+                    "APPOINTMENT_CREATED",
+                    UUID.randomUUID(),
+                    LocalDateTime.now(),
                     savedAppointment.getId(),
                     savedAppointment.getPatientId(),
                     savedAppointment.getDoctorId(),
                     savedAppointment.getAppointmentDate().toString()
             );
-            kafkaTemplate.send("appointment-created", event);
+            kafkaTemplate.send("appointment.events", event);
             log.info("Published appointment-created event for Appointment ID: {}", savedAppointment.getId());
         } catch (Exception e) {
             // Log the FULL stack trace (not just message) to expose the real root cause
@@ -118,7 +123,26 @@ public class AppointmentServiceImpl implements AppointmentService {
                 () -> new ResourceNotFoundException("Appointment not found with ID: " + id)
         );
         appointment.setStatus("CANCELLED");
-        return appointmentRepository.save(appointment);
+        Appointment cancelledAppointment = appointmentRepository.save(appointment);
+
+        // Publish Kafka Event for cancellation
+        try {
+            AppointmentEvent event = new AppointmentEvent(
+                    "APPOINTMENT_CANCELLED",
+                    UUID.randomUUID(),
+                    LocalDateTime.now(),
+                    cancelledAppointment.getId(),
+                    cancelledAppointment.getPatientId(),
+                    cancelledAppointment.getDoctorId(),
+                    cancelledAppointment.getAppointmentDate().toString()
+            );
+            kafkaTemplate.send("appointment.events", event);
+            log.info("Published appointment-cancelled event for Appointment ID: {}", cancelledAppointment.getId());
+        } catch (Exception e) {
+            log.error("Failed to publish Kafka event for cancelled Appointment ID: {}.", cancelledAppointment.getId(), e);
+        }
+
+        return cancelledAppointment;
     }
 
     @Override
