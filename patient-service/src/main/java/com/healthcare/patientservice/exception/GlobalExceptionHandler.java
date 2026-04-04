@@ -1,6 +1,5 @@
 package com.healthcare.patientservice.exception;
 
-import com.healthcare.patientservice.exception.InvalidCredentialsException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -45,17 +44,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 
-        @ExceptionHandler(InvalidCredentialsException.class)
-        public ResponseEntity<ErrorDetails> handleInvalidCredentialsException(InvalidCredentialsException exception,
-            WebRequest webRequest) {
-          ErrorDetails errorDetails = new ErrorDetails(
-              LocalDateTime.now(),
-              exception.getMessage(),
-              webRequest.getDescription(false),
-              "INVALID_CREDENTIALS"
-          );
-          return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
-        }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorDetails> handleIllegalArgumentException(IllegalArgumentException exception,
+                                                                       WebRequest webRequest) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                webRequest.getDescription(false),
+                "BAD_REQUEST"
+        );
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleGlobalException(Exception exception,
