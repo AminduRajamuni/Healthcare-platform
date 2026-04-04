@@ -1,14 +1,27 @@
 package com.healthcare.patientservice.service;
 
-import com.healthcare.patientservice.entity.Patient;
+import com.healthcare.patientservice.dto.*;
 
 import java.util.List;
 
 public interface PatientService {
-    Patient registerPatient(Patient patient);
-    Patient getPatientById(Long id);
-    List<Patient> getAllPatients();
-    Patient updatePatient(Patient patient, Long id);
-    void deletePatient(Long id);
-    String login(com.healthcare.patientservice.dto.LoginDto loginDto);
+  PatientProfileDto registerPatient(RegisterPatientRequest request);
+  PatientProfileDto getPatientById(Long id);
+  List<PatientListItemDto> getAllPatients();
+  PatientProfileDto updatePatient(Long id, UpdatePatientRequest request);
+  void deletePatient(Long id);
+  AuthResponseDto login(LoginRequest loginRequest);
+
+  // Medical history
+  List<MedicalHistoryDto> getMedicalHistory(Long patientId);
+  MedicalHistoryDto addMedicalHistory(Long patientId, CreateMedicalHistoryRequest request);
+
+  // Prescriptions
+  List<PrescriptionDto> getPrescriptions(Long patientId);
+  PrescriptionDto addPrescription(Long patientId, CreatePrescriptionRequest request);
+
+  // Medical reports
+  List<MedicalReportDto> getMedicalReports(Long patientId);
+  MedicalReportDto uploadMedicalReport(Long patientId, org.springframework.web.multipart.MultipartFile file, String description);
+  void deleteMedicalReport(Long patientId, Long reportId);
 }
