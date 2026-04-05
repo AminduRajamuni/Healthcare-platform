@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -15,7 +14,7 @@ import java.util.UUID;
 public class AppointmentEvent {
     private String eventType;
     private UUID eventId;
-    private LocalDateTime timestamp;
+    private String timestamp;
     private Long appointmentId;
     private Long patientId;
     private Long doctorId;

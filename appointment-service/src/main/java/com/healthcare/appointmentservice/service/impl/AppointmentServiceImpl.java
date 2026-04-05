@@ -87,7 +87,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             AppointmentEvent event = new AppointmentEvent(
                     "APPOINTMENT_CREATED",
                     UUID.randomUUID(),
-                    LocalDateTime.now(),
+                    LocalDateTime.now().toString(),
                     savedAppointment.getId(),
                     savedAppointment.getPatientId(),
                     savedAppointment.getDoctorId(),
@@ -130,7 +130,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             AppointmentEvent event = new AppointmentEvent(
                     "APPOINTMENT_CANCELLED",
                     UUID.randomUUID(),
-                    LocalDateTime.now(),
+                    LocalDateTime.now().toString(),
                     cancelledAppointment.getId(),
                     cancelledAppointment.getPatientId(),
                     cancelledAppointment.getDoctorId(),
