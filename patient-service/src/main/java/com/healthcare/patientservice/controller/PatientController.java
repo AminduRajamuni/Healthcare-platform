@@ -43,9 +43,25 @@ public class PatientController {
   // Get All Patients (admin only)
   @GetMapping
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<List<PatientListItemDto>> getAllPatients() {
+  public ResponseEntity<List<PatientListItemDto>> getAllPatients(
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "size", defaultValue = "20") int size) {
+
     List<PatientListItemDto> patients = patientService.getAllPatients();
-    return new ResponseEntity<>(patients, HttpStatus.OK);
+
+    if (page < 0) {
+      page = 0;
+    }
+    if (size <= 0) {
+      size = 20;
+    }
+
+    int fromIndex = Math.min(page * size, patients.size());
+    int toIndex = Math.min(fromIndex + size, patients.size());
+
+    List<PatientListItemDto> pagedPatients = patients.subList(fromIndex, toIndex);
+
+    return new ResponseEntity<>(pagedPatients, HttpStatus.OK);
   }
 
   // Update Patient (secured)
@@ -60,9 +76,9 @@ public class PatientController {
   // Delete Patient (secured - admin only for safety)
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<String> deletePatient(@PathVariable("id") Long patientId) {
+  public ResponseEntity<Void> deletePatient(@PathVariable("id") Long patientId) {
     patientService.deletePatient(patientId);
-    return new ResponseEntity<>("Patient successfully deleted!", HttpStatus.OK);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
   // Get Medical History (patient/admin/doctor)
@@ -86,8 +102,8 @@ public class PatientController {
   @GetMapping("/{id}/prescriptions")
   @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<List<PrescriptionDto>> getPrescriptions(@PathVariable("id") Long patientId) {
-    List<PrescriptionDto> list = patientService.getPrescriptions(patientId);
-    return new ResponseEntity<>(list, HttpStatus.OK);
+    List<PrescriptionDto> prescriptions = patientService.getPrescriptions(patientId);
+    return new ResponseEntity<>(prescriptions, HttpStatus.OK);
   }
 
   // Add Prescription (doctor/admin)
@@ -103,8 +119,8 @@ public class PatientController {
   @GetMapping("/{id}/reports")
   @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<List<MedicalReportDto>> getMedicalReports(@PathVariable("id") Long patientId) {
-    List<MedicalReportDto> list = patientService.getMedicalReports(patientId);
-    return new ResponseEntity<>(list, HttpStatus.OK);
+    List<MedicalReportDto> reports = patientService.getMedicalReports(patientId);
+    return new ResponseEntity<>(reports, HttpStatus.OK);
   }
 
   // Upload Medical Report (patient only)
@@ -113,6 +129,25 @@ public class PatientController {
   public ResponseEntity<MedicalReportDto> uploadMedicalReport(@PathVariable("id") Long patientId,
                                 @RequestPart("file") org.springframework.web.multipart.MultipartFile file,
                                 @RequestPart(value = "description", required = false) String description) {
+
+    if (file == null || file.isEmpty()) {
+      throw new IllegalArgumentException("File must not be empty");
+    }
+
+    long maxSizeBytes = 5 * 1024 * 1024; // 5 MB
+    if (file.getSize() > maxSizeBytes) {
+      throw new IllegalArgumentException("File size exceeds 5MB limit");
+    }
+
+    String contentType = file.getContentType();
+    if (contentType == null ||
+        !(contentType.equalsIgnoreCase("application/pdf") ||
+          contentType.startsWith("image/") ||
+          contentType.equalsIgnoreCase("application/msword") ||
+          contentType.equalsIgnoreCase("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))) {
+      throw new IllegalArgumentException("Unsupported file type");
+    }
+
     MedicalReportDto dto = patientService.uploadMedicalReport(patientId, file, description);
     return new ResponseEntity<>(dto, HttpStatus.CREATED);
   }
