@@ -1,6 +1,6 @@
 package com.healthcare.notificationservice.config;
 
-import com.healthcare.notificationservice.event.AppointmentCreatedEvent;
+import com.healthcare.notificationservice.event.AppointmentEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.context.annotation.Bean;
@@ -19,15 +19,15 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     @Bean
-    public ConsumerFactory<String, AppointmentCreatedEvent> consumerFactory() {
+    public ConsumerFactory<String, AppointmentEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         
-        JsonDeserializer<AppointmentCreatedEvent> jsonDeserializer = new JsonDeserializer<>(AppointmentCreatedEvent.class);
+        JsonDeserializer<AppointmentEvent> jsonDeserializer = new JsonDeserializer<>(AppointmentEvent.class);
         jsonDeserializer.addTrustedPackages("*");
-        jsonDeserializer.setUseTypeMapperForKey(true);
+        jsonDeserializer.setUseTypeHeaders(false);
 
         return new DefaultKafkaConsumerFactory<>(
                 props,
@@ -37,8 +37,8 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, AppointmentCreatedEvent> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, AppointmentCreatedEvent> factory =
+    public ConcurrentKafkaListenerContainerFactory<String, AppointmentEvent> kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, AppointmentEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;
