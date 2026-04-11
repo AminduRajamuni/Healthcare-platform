@@ -1,15 +1,17 @@
 package com.healthcare.doctorservice.service.impl;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
 import com.healthcare.doctorservice.entity.Doctor;
 import com.healthcare.doctorservice.exception.EmailAlreadyExistsException;
 import com.healthcare.doctorservice.exception.ResourceNotFoundException;
 import com.healthcare.doctorservice.repository.DoctorRepository;
 import com.healthcare.doctorservice.service.DoctorService;
-import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
@@ -39,13 +41,19 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    public List<Doctor> searchDoctors(String specialization, Boolean isAvailable, String name) {
+        String normalizedName = (name == null || name.trim().isEmpty()) ? null : name.trim();
+        return doctorRepository.searchDoctors(specialization, isAvailable, normalizedName);
+    }
+
+    @Override
     public Doctor updateDoctor(Doctor doctor, Long id) {
         Doctor existingDoctor = doctorRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Doctor", "id", id)
         );
 
         Optional<Doctor> doctorWithSameEmail = doctorRepository.findByEmail(doctor.getEmail());
-        if(doctorWithSameEmail.isPresent() && !doctorWithSameEmail.get().getId().equals(id)) {
+        if (doctorWithSameEmail.isPresent() && !doctorWithSameEmail.get().getId().equals(id)) {
             throw new EmailAlreadyExistsException("Email already exists for another doctor");
         }
 
@@ -65,7 +73,7 @@ public class DoctorServiceImpl implements DoctorService {
         Doctor existingDoctor = doctorRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Doctor", "id", id)
         );
-        
+
         existingDoctor.setIsAvailable(isAvailable);
         return doctorRepository.save(existingDoctor);
     }

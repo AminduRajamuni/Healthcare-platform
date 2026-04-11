@@ -1,9 +1,20 @@
 package com.healthcare.paymentservice.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "payments")
@@ -31,6 +42,19 @@ public class Payment {
     @Column(nullable = false, unique = true)
     private String transactionId;
 
+    @Column(unique = true)
+    private String orderId;
+
+    private String provider;
+
+    private String currency;
+
+    private String gatewayPaymentId;
+
+    private String statusReason;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }
