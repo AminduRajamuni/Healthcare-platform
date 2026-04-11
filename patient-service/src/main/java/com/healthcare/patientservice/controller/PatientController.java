@@ -81,6 +81,14 @@ public class PatientController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
+  // Search doctors (all authenticated roles)
+  @GetMapping("/doctors/search")
+  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
+  public ResponseEntity<List<DoctorDto>> searchDoctors(@RequestParam(value = "specialty", required = false) String specialty) {
+    List<DoctorDto> doctors = patientService.searchDoctors(specialty);
+    return new ResponseEntity<>(doctors, HttpStatus.OK);
+  }
+
   // Get Medical History (patient/admin/doctor)
   @GetMapping("/{id}/medical-history")
   @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
@@ -159,5 +167,31 @@ public class PatientController {
                           @PathVariable("reportId") Long reportId) {
     patientService.deleteMedicalReport(patientId, reportId);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
+
+  // Book appointment for patient (patient or admin)
+  @PostMapping("/{id}/appointments")
+  @PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId == principal.id)")
+  public ResponseEntity<AppointmentDto> bookAppointment(@PathVariable("id") Long patientId,
+                             @Valid @RequestBody BookAppointmentRequest request) {
+    AppointmentDto dto = patientService.bookAppointment(patientId, request);
+    return new ResponseEntity<>(dto, HttpStatus.CREATED);
+  }
+
+  // Get all appointments for a patient
+  @GetMapping("/{id}/appointments")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  public ResponseEntity<List<AppointmentDto>> getPatientAppointments(@PathVariable("id") Long patientId) {
+    List<AppointmentDto> appointments = patientService.getPatientAppointments(patientId);
+    return new ResponseEntity<>(appointments, HttpStatus.OK);
+  }
+
+  // Get telemedicine video link/session info for an appointment
+  @GetMapping("/{id}/appointments/{appointmentId}/video-link")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  public ResponseEntity<TelemedicineSessionDto> getVideoLink(@PathVariable("id") Long patientId,
+                                   @PathVariable Long appointmentId) {
+    TelemedicineSessionDto session = patientService.getVideoLink(patientId, appointmentId);
+    return new ResponseEntity<>(session, HttpStatus.OK);
   }
 }

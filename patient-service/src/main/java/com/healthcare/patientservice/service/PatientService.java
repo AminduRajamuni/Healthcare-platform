@@ -24,4 +24,13 @@ public interface PatientService {
   List<MedicalReportDto> getMedicalReports(Long patientId);
   MedicalReportDto uploadMedicalReport(Long patientId, org.springframework.web.multipart.MultipartFile file, String description);
   void deleteMedicalReport(Long patientId, Long reportId);
+
+  // Cross-service operations
+  java.util.List<DoctorDto> searchDoctors(String specialty);
+
+  AppointmentDto bookAppointment(Long patientId, BookAppointmentRequest request);
+
+  java.util.List<AppointmentDto> getPatientAppointments(Long patientId);
+
+  TelemedicineSessionDto getVideoLink(Long patientId, Long appointmentId);
 }
