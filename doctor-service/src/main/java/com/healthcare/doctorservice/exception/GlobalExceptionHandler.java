@@ -104,6 +104,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_GATEWAY);
     }
 
+    @ExceptionHandler(PatientServicePassThroughException.class)
+    public ResponseEntity<ErrorDetails> handlePatientServicePassThroughException(PatientServicePassThroughException exception,
+            WebRequest webRequest) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                webRequest.getDescription(false),
+                "PATIENT_SERVICE_" + exception.getStatusCode().value()
+        );
+        return new ResponseEntity<>(errorDetails, exception.getStatusCode());
+    }
+
+    @ExceptionHandler(TelemedicineServiceException.class)
+    public ResponseEntity<ErrorDetails> handleTelemedicineServiceException(TelemedicineServiceException exception,
+            WebRequest webRequest) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                webRequest.getDescription(false),
+                "TELEMEDICINE_SERVICE_ERROR"
+        );
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_GATEWAY);
+    }
+
+    @ExceptionHandler(TelemedicineServicePassThroughException.class)
+    public ResponseEntity<ErrorDetails> handleTelemedicineServicePassThroughException(TelemedicineServicePassThroughException exception,
+            WebRequest webRequest) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                webRequest.getDescription(false),
+                "TELEMEDICINE_SERVICE_" + exception.getStatusCode().value()
+        );
+        return new ResponseEntity<>(errorDetails, exception.getStatusCode());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleGlobalException(Exception exception,
             WebRequest webRequest) {
