@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,16 +24,8 @@ public class PatientController {
     return new ResponseEntity<>(savedPatient, HttpStatus.CREATED);
   }
 
-  // Login and get JWT token
-  @PostMapping("/login")
-  public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequest loginRequest) {
-    AuthResponseDto response = patientService.login(loginRequest);
-    return new ResponseEntity<>(response, HttpStatus.OK);
-  }
-
   // Get Patient By ID (secured)
   @GetMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<PatientProfileDto> getPatientById(@PathVariable("id") Long patientId) {
     PatientProfileDto patient = patientService.getPatientById(patientId);
     return new ResponseEntity<>(patient, HttpStatus.OK);
@@ -42,7 +33,6 @@ public class PatientController {
 
   // Get All Patients (admin only)
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<List<PatientListItemDto>> getAllPatients(
       @RequestParam(value = "page", defaultValue = "0") int page,
       @RequestParam(value = "size", defaultValue = "20") int size) {
@@ -66,7 +56,6 @@ public class PatientController {
 
   // Update Patient (secured)
   @PutMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<PatientProfileDto> updatePatient(@PathVariable("id") Long patientId,
                              @Valid @RequestBody UpdatePatientRequest request) {
     PatientProfileDto updatedPatient = patientService.updatePatient(patientId, request);
@@ -75,7 +64,6 @@ public class PatientController {
 
   // Delete Patient (secured - admin only for safety)
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Void> deletePatient(@PathVariable("id") Long patientId) {
     patientService.deletePatient(patientId);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -83,7 +71,6 @@ public class PatientController {
 
   // Search doctors (all authenticated roles)
   @GetMapping("/doctors/search")
-  @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
   public ResponseEntity<List<DoctorDto>> searchDoctors(@RequestParam(value = "specialty", required = false) String specialty) {
     List<DoctorDto> doctors = patientService.searchDoctors(specialty);
     return new ResponseEntity<>(doctors, HttpStatus.OK);
@@ -91,7 +78,6 @@ public class PatientController {
 
   // Get Medical History (patient/admin/doctor)
   @GetMapping("/{id}/medical-history")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<List<MedicalHistoryDto>> getMedicalHistory(@PathVariable("id") Long patientId) {
     List<MedicalHistoryDto> history = patientService.getMedicalHistory(patientId);
     return new ResponseEntity<>(history, HttpStatus.OK);
@@ -99,7 +85,6 @@ public class PatientController {
 
   // Add Medical History (doctor/admin)
   @PostMapping("/{id}/medical-history")
-  @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
   public ResponseEntity<MedicalHistoryDto> addMedicalHistory(@PathVariable("id") Long patientId,
                               @Valid @RequestBody CreateMedicalHistoryRequest request) {
     MedicalHistoryDto dto = patientService.addMedicalHistory(patientId, request);
@@ -108,7 +93,6 @@ public class PatientController {
 
   // Get Prescriptions (patient/admin/doctor)
   @GetMapping("/{id}/prescriptions")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<List<PrescriptionDto>> getPrescriptions(@PathVariable("id") Long patientId) {
     List<PrescriptionDto> prescriptions = patientService.getPrescriptions(patientId);
     return new ResponseEntity<>(prescriptions, HttpStatus.OK);
@@ -116,7 +100,6 @@ public class PatientController {
 
   // Add Prescription (doctor/admin)
   @PostMapping("/{id}/prescriptions")
-  @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
   public ResponseEntity<PrescriptionDto> addPrescription(@PathVariable("id") Long patientId,
                               @Valid @RequestBody CreatePrescriptionRequest request) {
     PrescriptionDto dto = patientService.addPrescription(patientId, request);
@@ -125,7 +108,6 @@ public class PatientController {
 
   // List Medical Reports (patient/admin/doctor)
   @GetMapping("/{id}/reports")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<List<MedicalReportDto>> getMedicalReports(@PathVariable("id") Long patientId) {
     List<MedicalReportDto> reports = patientService.getMedicalReports(patientId);
     return new ResponseEntity<>(reports, HttpStatus.OK);
@@ -133,7 +115,6 @@ public class PatientController {
 
   // Upload Medical Report (patient only)
   @PostMapping(value = "/{id}/reports", consumes = "multipart/form-data")
-  @PreAuthorize("hasRole('PATIENT') and #patientId == principal.id")
   public ResponseEntity<MedicalReportDto> uploadMedicalReport(@PathVariable("id") Long patientId,
                                 @RequestPart("file") org.springframework.web.multipart.MultipartFile file,
                                 @RequestPart(value = "description", required = false) String description) {
@@ -162,7 +143,6 @@ public class PatientController {
 
   // Delete Medical Report (patient or admin)
   @DeleteMapping("/{id}/reports/{reportId}")
-  @PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<Void> deleteMedicalReport(@PathVariable("id") Long patientId,
                           @PathVariable("reportId") Long reportId) {
     patientService.deleteMedicalReport(patientId, reportId);
@@ -171,7 +151,6 @@ public class PatientController {
 
   // Book appointment for patient (patient or admin)
   @PostMapping("/{id}/appointments")
-  @PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<AppointmentDto> bookAppointment(@PathVariable("id") Long patientId,
                              @Valid @RequestBody BookAppointmentRequest request) {
     AppointmentDto dto = patientService.bookAppointment(patientId, request);
@@ -180,7 +159,6 @@ public class PatientController {
 
   // Get all appointments for a patient
   @GetMapping("/{id}/appointments")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<List<AppointmentDto>> getPatientAppointments(@PathVariable("id") Long patientId) {
     List<AppointmentDto> appointments = patientService.getPatientAppointments(patientId);
     return new ResponseEntity<>(appointments, HttpStatus.OK);
@@ -188,7 +166,6 @@ public class PatientController {
 
   // Get telemedicine video link/session info for an appointment
   @GetMapping("/{id}/appointments/{appointmentId}/video-link")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
   public ResponseEntity<TelemedicineSessionDto> getVideoLink(@PathVariable("id") Long patientId,
                                    @PathVariable Long appointmentId) {
     TelemedicineSessionDto session = patientService.getVideoLink(patientId, appointmentId);
