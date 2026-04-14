@@ -10,7 +10,6 @@ public interface PatientService {
   List<PatientListItemDto> getAllPatients();
   PatientProfileDto updatePatient(Long id, UpdatePatientRequest request);
   void deletePatient(Long id);
-  AuthResponseDto login(LoginRequest loginRequest);
 
   // Medical history
   List<MedicalHistoryDto> getMedicalHistory(Long patientId);

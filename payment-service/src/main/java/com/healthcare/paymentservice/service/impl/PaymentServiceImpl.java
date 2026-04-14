@@ -42,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final RestTemplate restTemplate;
     private final PayHereProperties payHereProperties;
     private final ObjectProvider<KafkaTemplate<Object, Object>> kafkaTemplateProvider;
 
@@ -212,7 +213,7 @@ public class PaymentServiceImpl implements PaymentService {
     private void validateAppointmentExists(Long appointmentId) {
         String url = appointmentServiceBaseUrl + "/api/appointments/" + appointmentId;
         try {
-            ResponseEntity<Map> response = new RestTemplate().getForEntity(url, Map.class);
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
             if (!response.getStatusCode().is2xxSuccessful()) {
                 throw new IllegalStateException("Appointment validation failed for ID: " + appointmentId);
             }

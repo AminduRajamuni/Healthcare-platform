@@ -41,4 +41,17 @@ public class Doctor {
 
     @Column(nullable = false)
     private Boolean isAvailable = true;
+
+    @Column(columnDefinition = "boolean default false")
+    private Boolean isVerified = false;
+
+    @PrePersist
+    public void prePersist() {
+        if (isAvailable == null) {
+            isAvailable = true;
+        }
+        if (isVerified == null) {
+            isVerified = false;
+        }
+    }
 }
