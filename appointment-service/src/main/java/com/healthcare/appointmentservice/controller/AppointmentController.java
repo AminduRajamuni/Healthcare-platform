@@ -33,6 +33,22 @@ public class AppointmentController {
         return new ResponseEntity<>(appointment, HttpStatus.OK);
     }
 
+    // Build Get Appointments By Patient ID REST API
+    @GetMapping("patient/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<Appointment>> getAppointmentsByPatientId(@PathVariable("id") Long patientId) {
+        List<Appointment> appointments = appointmentService.getAppointmentsByPatientId(patientId);
+        return new ResponseEntity<>(appointments, HttpStatus.OK);
+    }
+
+    // Build Get Appointments By Doctor ID REST API
+    @GetMapping("doctor/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN') or hasRole('PATIENT')")
+    public ResponseEntity<List<Appointment>> getAppointmentsByDoctorId(@PathVariable("id") Long doctorId) {
+        List<Appointment> appointments = appointmentService.getAppointmentsByDoctorId(doctorId);
+        return new ResponseEntity<>(appointments, HttpStatus.OK);
+    }
+
     // Build Get All Appointments REST API
     @GetMapping
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
@@ -56,5 +72,13 @@ public class AppointmentController {
     public ResponseEntity<Appointment> cancelAppointment(@PathVariable("id") Long appointmentId) {
         Appointment cancelledAppointment = appointmentService.cancelAppointment(appointmentId);
         return new ResponseEntity<>(cancelledAppointment, HttpStatus.OK);
+    }
+
+    // Build Hard Delete Appointment REST API
+    @DeleteMapping("{id}/hard")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> hardDeleteAppointment(@PathVariable("id") Long appointmentId) {
+        appointmentService.deleteAppointment(appointmentId);
+        return new ResponseEntity<>("Appointment permanently deleted", HttpStatus.OK);
     }
 }

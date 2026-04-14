@@ -33,6 +33,9 @@ export default function Login() {
       // Save token (usually in localStorage)
       if (data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.id);
+        localStorage.setItem('firstName', data.firstName);
+        localStorage.setItem('role', data.role);
       }
 
       // Navigate based on role
