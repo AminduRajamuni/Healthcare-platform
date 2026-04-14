@@ -25,7 +25,7 @@ public class DoctorTelemedicineBridgeServiceImpl implements DoctorTelemedicineBr
     private static final String TELEMEDICINE_SERVICE_BASE_URL = "http://localhost:8085/api/sessions";
 
     private final DoctorRepository doctorRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @Override
     @SuppressWarnings("unchecked")

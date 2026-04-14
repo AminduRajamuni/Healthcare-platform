@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/api/doctors/{doctorId}/telemedicine/sessions")
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR')")
 @AllArgsConstructor
 public class DoctorTelemedicineBridgeController {
 

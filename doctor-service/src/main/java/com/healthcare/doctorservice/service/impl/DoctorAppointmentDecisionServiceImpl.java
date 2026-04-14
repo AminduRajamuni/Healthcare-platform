@@ -25,7 +25,7 @@ public class DoctorAppointmentDecisionServiceImpl implements DoctorAppointmentDe
     private static final String APPOINTMENT_SERVICE_BASE_URL = "http://localhost:8082/api/appointments";
 
     private final DoctorRepository doctorRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @Override
     public Map<String, Object> decideAppointment(Long doctorId, Long appointmentId, String decision) {

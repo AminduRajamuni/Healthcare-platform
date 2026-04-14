@@ -31,11 +31,13 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
         return new ResponseEntity<>(paymentService.createPayment(request), HttpStatus.CREATED);
     }
 
     @PostMapping("/payhere/initiate")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<PayHereInitiateResponse> initiatePayHerePayment(
             @Valid @RequestBody PayHereInitiateRequest request) {
         return new ResponseEntity<>(paymentService.initiatePayHerePayment(request), HttpStatus.CREATED);
@@ -92,21 +94,25 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
     public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.getPaymentById(id));
     }
 
     @GetMapping("/order/{orderId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
     public ResponseEntity<Payment> getPaymentByOrderId(@PathVariable String orderId) {
         return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId));
     }
 
     @PostMapping("/order/{orderId}/cancel")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
     public ResponseEntity<Payment> cancelPaymentByOrderId(@PathVariable String orderId) {
         return ResponseEntity.ok(paymentService.cancelPaymentByOrderId(orderId));
     }
 
     @GetMapping("/appointment/{appointmentId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
     public ResponseEntity<Payment> getPaymentByAppointmentId(@PathVariable Long appointmentId) {
         return ResponseEntity.ok(paymentService.getPaymentByAppointmentId(appointmentId));
     }

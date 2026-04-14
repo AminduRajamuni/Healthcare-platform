@@ -38,6 +38,7 @@ public class SymptomCheckerController {
      *   }
      */
     @PostMapping("/analyze")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<SymptomAnalysisResponse> analyzeSymptoms(
             @Valid @RequestBody SymptomRequest request) {
 

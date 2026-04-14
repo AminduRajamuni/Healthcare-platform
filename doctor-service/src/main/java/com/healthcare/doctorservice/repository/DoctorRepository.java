@@ -22,4 +22,6 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     List<Doctor> searchDoctors(@Param("specialization") String specialization,
             @Param("isAvailable") Boolean isAvailable,
             @Param("name") String name);
+
+    List<Doctor> findByIsVerifiedFalse();
 }

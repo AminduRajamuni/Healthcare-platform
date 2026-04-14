@@ -38,6 +38,7 @@ public class DoctorController {
 
     // Build Get Doctor By ID REST API
     @GetMapping("{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or hasRole('PATIENT')")
     public ResponseEntity<Doctor> getDoctorById(@PathVariable("id") Long doctorId) {
         Doctor doctor = doctorService.getDoctorById(doctorId);
         return new ResponseEntity<>(doctor, HttpStatus.OK);
@@ -45,6 +46,7 @@ public class DoctorController {
 
     // Build Get All Doctors REST API
     @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('PATIENT')")
     public ResponseEntity<List<Doctor>> getAllDoctors() {
         List<Doctor> doctors = doctorService.getAllDoctors();
         return new ResponseEntity<>(doctors, HttpStatus.OK);
@@ -52,6 +54,7 @@ public class DoctorController {
 
     // Build Search Doctors REST API
     @GetMapping("/search")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('PATIENT')")
     public ResponseEntity<List<Doctor>> searchDoctors(@RequestParam("specialization") String specialization,
             @RequestParam("isAvailable") Boolean isAvailable,
             @RequestParam(value = "name", required = false) String name) {
@@ -61,6 +64,7 @@ public class DoctorController {
 
     // Build Update Doctor REST API
     @PutMapping("{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and #doctorId.toString().equals(authentication.principal))")
     public ResponseEntity<Doctor> updateDoctor(@PathVariable("id") Long doctorId,
             @Valid @RequestBody Doctor doctor) {
         Doctor updatedDoctor = doctorService.updateDoctor(doctor, doctorId);
@@ -69,6 +73,7 @@ public class DoctorController {
 
     // Build Patch Doctor Availability REST API
     @PatchMapping("{id}/availability")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and #doctorId.toString().equals(authentication.principal))")
     public ResponseEntity<Doctor> updateDoctorAvailability(@PathVariable("id") Long doctorId,
             @RequestBody Map<String, Boolean> request) {
         Boolean isAvailable = request.get("isAvailable");
@@ -76,8 +81,25 @@ public class DoctorController {
         return new ResponseEntity<>(updatedDoctor, HttpStatus.OK);
     }
 
+    // Build Verify Doctor REST API
+    @PutMapping("{id}/verify")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Doctor> verifyDoctor(@PathVariable("id") Long doctorId) {
+        Doctor verifiedDoctor = doctorService.verifyDoctor(doctorId);
+        return new ResponseEntity<>(verifiedDoctor, HttpStatus.OK);
+    }
+
+    // Build Get Unverified Doctors REST API
+    @GetMapping("unverified")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Doctor>> getUnverifiedDoctors() {
+        List<Doctor> unverifiedDoctors = doctorService.getUnverifiedDoctors();
+        return new ResponseEntity<>(unverifiedDoctors, HttpStatus.OK);
+    }
+
     // Build Delete Doctor REST API
     @DeleteMapping("{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteDoctor(@PathVariable("id") Long doctorId) {
         doctorService.deleteDoctor(doctorId);
         return new ResponseEntity<>("Doctor successfully deleted!", HttpStatus.OK);

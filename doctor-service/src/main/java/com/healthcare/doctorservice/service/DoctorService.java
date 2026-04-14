@@ -18,5 +18,9 @@ public interface DoctorService {
 
     Doctor updateDoctorAvailability(Long id, Boolean isAvailable);
 
+    Doctor verifyDoctor(Long id);
+
+    List<Doctor> getUnverifiedDoctors();
+
     void deleteDoctor(Long id);
 }
