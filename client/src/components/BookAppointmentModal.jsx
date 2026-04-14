@@ -134,8 +134,9 @@ const BookAppointmentModal = ({ isOpen, onClose, patientId, onBooked }) => {
     };
 
     const filteredDoctors = doctors.filter(d => 
-        (d.name || d.firstName + ' ' + d.lastName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (d.specialty || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (d.isVerified === true || d.isVerified === undefined) &&
+        ((d.name || d.firstName + ' ' + d.lastName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (d.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     if (!isOpen) return null;

@@ -32,6 +32,24 @@ const doctorService = {
             console.error(`Error fetching doctor ${id}`, error);
             throw error;
         }
+    },
+    verifyDoctor: async (id) => {
+        try {
+            const response = await axios.put(`${API_URL}/${id}/verify`, {}, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error verifying doctor ${id}`, error);
+            throw error;
+        }
+    },
+    deleteDoctor: async (id) => {
+        try {
+            const response = await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting doctor ${id}`, error);
+            throw error;
+        }
     }
 };
 
