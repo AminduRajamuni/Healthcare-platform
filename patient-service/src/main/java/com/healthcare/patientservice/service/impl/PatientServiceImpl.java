@@ -68,6 +68,17 @@ public class PatientServiceImpl implements PatientService {
     patient.setGender(request.getGender());
     patient.setPassword(request.getPassword());
 
+    if (request.getRole() != null && !request.getRole().isBlank()) {
+        try {
+            patient.setRole(Role.valueOf(request.getRole().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid role provided: {}, defaulting to PATIENT", request.getRole());
+            patient.setRole(Role.PATIENT);
+        }
+    } else {
+        patient.setRole(Role.PATIENT);
+    }
+
     Patient saved = patientRepository.save(patient);
     return mapToProfileDto(saved);
   }

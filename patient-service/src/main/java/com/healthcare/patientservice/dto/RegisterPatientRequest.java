@@ -38,6 +38,8 @@ public class RegisterPatientRequest {
 	private LocalDate dob;
 
 	private String gender;
+	
+	private String role;
 }
 
 
