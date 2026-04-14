@@ -4,6 +4,21 @@ import { ArrowRight, Activity } from 'lucide-react';
 export default function Login() {
   const navigate = useNavigate();
 
+  // Development quick login - stores mock token
+  const handleQuickLogin = (role) => {
+    // Store mock JWT token for development
+    const mockToken = 'dev-token-' + Date.now();
+    localStorage.setItem('authToken', mockToken);
+    localStorage.setItem('userRole', role);
+    localStorage.setItem('userId', 'user-' + role.toLowerCase());
+    localStorage.setItem('userEmail', 'dev@healthcare.local');
+    
+    // Navigate to dashboard
+    if (role === 'PATIENT') navigate('/patient');
+    else if (role === 'DOCTOR') navigate('/doctor');
+    else if (role === 'ADMIN') navigate('/admin');
+  };
+
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -62,9 +77,9 @@ export default function Login() {
             DEVELOPMENT: QUICK LOGIN AS
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <button className="btn-outline" onClick={() => navigate('/admin')}>Admin</button>
-            <button className="btn-outline" onClick={() => navigate('/doctor')}>Doctor</button>
-            <button className="btn-outline" onClick={() => navigate('/patient')}>Patient</button>
+            <button className="btn-outline" onClick={() => handleQuickLogin('ADMIN')}>Admin</button>
+            <button className="btn-outline" onClick={() => handleQuickLogin('DOCTOR')}>Doctor</button>
+            <button className="btn-outline" onClick={() => handleQuickLogin('PATIENT')}>Patient</button>
           </div>
         </div>
 

@@ -18,7 +18,7 @@ export default function PatientDashboard() {
         <nav className="sidebar-nav">
           <div className="nav-item active"><Heart size={20} /> My Health</div>
           <div className="nav-item"><Calendar size={20} /> Book Appointment</div>
-          <div className="nav-item"><Stethoscope size={20} /> Symptom Checker</div>
+          <div className="nav-item" onClick={() => navigate('/patient/symptoms')} style={{ cursor: 'pointer' }}><Stethoscope size={20} /> Symptom Checker</div>
           <div className="nav-item"><Clock size={20} /> Medical History</div>
           <div className="nav-item"><CreditCard size={20} /> Invoices & Payments</div>
         </nav>
@@ -81,7 +81,7 @@ export default function PatientDashboard() {
           <section className="glass-panel" style={{ padding: '24px' }}>
              <h3 className="text-h3" style={{ marginBottom: '16px' }}>Symptom Checker</h3>
              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Not feeling well? Describe your symptoms to get recommendations.</p>
-             <button className="btn-outline" style={{ width: '100%' }}>Start Symptom Check</button>
+             <button className="btn-outline" style={{ width: '100%' }} onClick={() => navigate('/patient/symptoms')}>Start Symptom Check</button>
           </section>
           
           <section className="glass-panel" style={{ padding: '24px' }}>

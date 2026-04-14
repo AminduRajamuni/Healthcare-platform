@@ -6,6 +6,31 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://localhost:3000"
+              - "http://localhost:8080"
+              - "http://localhost:8081"
+              - "http://127.0.0.1:5173"
+              - "http://127.0.0.1:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            exposedHeaders:
+              - "Content-Type"
+              - "Authorization"
+              - "X-User-Role"
+              - "X-User-Id"
+            allowCredentials: true
+            maxAge: 3600
       routes:
         - id: patient-service
           uri: http://localhost:8080

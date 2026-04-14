@@ -24,6 +24,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Symptom analysis endpoint requires PATIENT role authentication
+                .requestMatchers("/api/symptoms/**").authenticated()
+                // All other requests need authentication
                 .anyRequest().authenticated()
             )
             .addFilterBefore(headerRoleAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -1,0 +1,238 @@
+/* Symptom Checker Page Styles */
+
+.symptom-checker-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+  padding: 32px 24px;
+}
+
+.symptom-checker-header {
+  max-width: 900px;
+  margin: 0 auto 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.btn-back {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.symptom-checker-header h1 {
+  margin: 0;
+  background: linear-gradient(to right, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.symptom-checker-main {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Input Section */
+.symptom-input-section {
+  padding: 32px;
+  margin-bottom: 32px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.symptom-form {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.symptom-textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.symptom-textarea:focus {
+  outline: none;
+  border-color: var(--gradient-1);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.symptom-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.disclaimer-box {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  margin-top: 24px;
+}
+
+.disclaimer-box svg {
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.disclaimer-box p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.disclaimer-box p:first-of-type {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* Results Section */
+.symptom-results-section {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.urgency-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid;
+  border-radius: 16px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+/* Conditions List */
+.conditions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.condition-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+
+.condition-item svg {
+  flex-shrink: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.action-buttons .btn-primary,
+.action-buttons .btn-outline {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Spinner Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .symptom-checker-container {
+    padding: 16px;
+  }
+
+  .symptom-input-section,
+  .glass-panel {
+    padding: 20px;
+  }
+
+  .symptom-textarea {
+    min-height: 140px;
+    font-size: 0.9rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .btn-primary,
+  .action-buttons .btn-outline {
+    width: 100%;
+  }
+
+  .disclaimer-box {
+    flex-direction: column;
+  }
+
+  .disclaimer-box svg {
+    margin-top: 4px;
+  }
+}

@@ -26,6 +26,17 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
+            
+            // DEVELOPMENT MODE: Bypass auth for symptom checker
+            String path = request.getURI().getPath();
+            if (path.contains("/api/symptoms")) {
+                // Add default headers for symptom checker
+                request = request.mutate()
+                        .header("X-User-Id", "dev-user")
+                        .header("X-User-Role", "PATIENT")
+                        .build();
+                return chain.filter(exchange.mutate().request(request).build());
+            }
 
             // Check if the route is secured
             if (isSecured(request)) {
@@ -64,9 +75,15 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     }
 
     private boolean isSecured(ServerHttpRequest request) {
-        // Exclude /register, /login routes from token checks
+        // Exclude /register, /login, /auth, and /api/symptoms (SymptomChecker)
+        // from authentication checks for development
         String path = request.getURI().getPath();
-        return !(path.contains("/register") || path.contains("/login") || path.contains("/auth"));
+        boolean isPublic = path.contains("/register") || 
+                          path.contains("/login") || 
+                          path.contains("/auth") || 
+                          path.contains("/api/symptoms");
+        
+        return !isPublic;  // If not public, it needs auth
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
