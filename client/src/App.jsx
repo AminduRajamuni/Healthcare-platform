@@ -5,6 +5,7 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientRegistration from './pages/PatientRegistration';
 import DoctorRegistration from './pages/DoctorRegistration';
+import SymptomChecker from './pages/SymptomChecker';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -30,6 +31,11 @@ function App() {
           <Route path="/patient" element={
             <ProtectedRoute allowedRoles={['PATIENT']}>
                 <PatientDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/symptom-checker" element={
+            <ProtectedRoute allowedRoles={['PATIENT']}>
+                <SymptomChecker />
             </ProtectedRoute>
           } />
         </Routes>

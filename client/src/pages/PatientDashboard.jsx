@@ -84,7 +84,7 @@ export default function PatientDashboard() {
         <nav className="sidebar-nav">
           <div className="nav-item"><Heart size={20} /> My Health</div>
           <div className="nav-item active"><Calendar size={20} /> Appointments</div>
-          <div className="nav-item"><Stethoscope size={20} /> Symptom Checker</div>
+          <div className="nav-item" onClick={() => navigate('/symptom-checker')}><Stethoscope size={20} /> Symptom Checker</div>
           <div className="nav-item"><Clock size={20} /> Medical History</div>
           <div className="nav-item"><CreditCard size={20} /> Invoices & Payments</div>
         </nav>
