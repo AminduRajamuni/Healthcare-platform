@@ -35,6 +35,7 @@ public class AuthController {
                 response.put("role", patient.getRole().name());
                 response.put("id", patient.getId().toString());
                 response.put("firstName", patient.getFirstName());
+                response.put("email", patient.getEmail());
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }

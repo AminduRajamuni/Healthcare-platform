@@ -33,6 +33,15 @@ const doctorService = {
             throw error;
         }
     },
+    getDoctorByEmail: async (email) => {
+        try {
+            const response = await axios.get(`${API_URL}/email/${email}`, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching doctor by email ${email}`, error);
+            throw error;
+        }
+    },
     verifyDoctor: async (id) => {
         try {
             const response = await axios.put(`${API_URL}/${id}/verify`, {}, getAuthHeaders());

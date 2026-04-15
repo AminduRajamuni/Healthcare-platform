@@ -27,6 +27,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
 
+            // Allow preflight CORS requests
+            if (request.getMethod() != null && request.getMethod().name().equals("OPTIONS")) {
+                return chain.filter(exchange);
+            }
+
             // Check if the route is secured
             if (isSecured(request)) {
                 if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
@@ -64,9 +69,13 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     }
 
     private boolean isSecured(ServerHttpRequest request) {
-        // Exclude /register, /login routes from token checks
+        // Exclude /register, /login, /payhere, and /search routes from token checks
         String path = request.getURI().getPath();
-        return !(path.contains("/register") || path.contains("/login") || path.contains("/auth"));
+        return !(path.contains("/register") || 
+                 path.contains("/login") || 
+                 path.contains("/auth") ||
+                 path.contains("/payhere") ||
+                 path.contains("/search"));
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {

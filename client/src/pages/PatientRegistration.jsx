@@ -15,11 +15,13 @@ export default function PatientRegistration() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const payload = { ...formData, role: 'PATIENT' };
@@ -34,8 +36,12 @@ export default function PatientRegistration() {
         throw new Error('Failed to register. Email may already be in use.');
       }
 
-      // Automatically navigate to login page on success
-      navigate('/?registered=true');
+      setSuccess('Patient registered successfully! Redirecting to login...');
+      
+      // Navigate to login page on success after a short delay
+      setTimeout(() => {
+        navigate('/?registered=true');
+      }, 1500);
     } catch (err) {
       setError(err.message || 'An error occurred during registration');
     } finally {
@@ -64,6 +70,11 @@ export default function PatientRegistration() {
           {error && (
              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
                {error}
+             </div>
+          )}
+          {success && (
+             <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
+               {success}
              </div>
           )}
 
@@ -95,7 +106,7 @@ export default function PatientRegistration() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Date of Birth</label>
-              <input type="date" name="dob" className="glass-input" required onChange={handleChange} style={{ colorScheme: 'dark' }} />
+              <input type="date" name="dob" className="glass-input" max={new Date().toISOString().split('T')[0]} required onChange={handleChange} style={{ colorScheme: 'dark' }} />
             </div>
           </div>
 

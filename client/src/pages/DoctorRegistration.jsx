@@ -17,11 +17,13 @@ export default function DoctorRegistration() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       // 1. Create Patient Auth Credentials (Role: DOCTOR)
@@ -57,7 +59,7 @@ export default function DoctorRegistration() {
          isVerified: false
       };
 
-      const profileResponse = await fetch('/api/doctors', {
+      const profileResponse = await fetch('/api/doctors/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profilePayload),
@@ -67,8 +69,11 @@ export default function DoctorRegistration() {
          throw new Error('Failed to create doctor professional profile');
       }
 
-      // Navigate to login page on dual success
-      navigate('/?registered=true');
+      setSuccess('Doctor profile created successfully! Redirecting to login...');
+      // Navigate to login page on dual success after showing the success message briefly
+      setTimeout(() => {
+        navigate('/?registered=true');
+      }, 1500);
     } catch (err) {
       setError(err.message || 'An error occurred during registration');
     } finally {
@@ -97,6 +102,11 @@ export default function DoctorRegistration() {
           {error && (
              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
                {error}
+             </div>
+          )}
+          {success && (
+             <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
+               {success}
              </div>
           )}
 
@@ -131,7 +141,7 @@ export default function DoctorRegistration() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Date of Birth</label>
-              <input type="date" name="dob" className="glass-input" required onChange={handleChange} style={{ colorScheme: 'dark' }} />
+              <input type="date" name="dob" className="glass-input" max={new Date().toISOString().split('T')[0]} required onChange={handleChange} style={{ colorScheme: 'dark' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Gender</label>

@@ -30,7 +30,7 @@ public class DoctorController {
     private final DoctorService doctorService;
 
     // Build Add Doctor REST API
-    @PostMapping
+    @PostMapping("/register")
     public ResponseEntity<Doctor> addDoctor(@Valid @RequestBody Doctor doctor) {
         Doctor savedDoctor = doctorService.addDoctor(doctor);
         return new ResponseEntity<>(savedDoctor, HttpStatus.CREATED);
@@ -44,9 +44,17 @@ public class DoctorController {
         return new ResponseEntity<>(doctor, HttpStatus.OK);
     }
 
+    // Build Get Doctor By Email REST API
+    @GetMapping("email/{email}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR')")
+    public ResponseEntity<Doctor> getDoctorByEmail(@PathVariable("email") String email) {
+        Doctor doctor = doctorService.getDoctorByEmail(email);
+        return new ResponseEntity<>(doctor, HttpStatus.OK);
+    }
+
     // Build Get All Doctors REST API
     @GetMapping
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('PATIENT')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('PATIENT') or hasRole('DOCTOR')")
     public ResponseEntity<List<Doctor>> getAllDoctors() {
         List<Doctor> doctors = doctorService.getAllDoctors();
         return new ResponseEntity<>(doctors, HttpStatus.OK);

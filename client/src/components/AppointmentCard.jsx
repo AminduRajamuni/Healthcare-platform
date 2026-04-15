@@ -129,7 +129,7 @@ const AppointmentCard = ({ appointment, onCancel, onHardDelete, role = "PATIENT"
                  </span>
             </div>
 
-            {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && isFuture && (
+{role !== 'DOCTOR' && appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && isFuture && (
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                     <button 
                         className="btn-outline" 
