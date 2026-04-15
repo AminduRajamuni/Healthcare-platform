@@ -3,6 +3,8 @@ import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PatientDashboard from './pages/PatientDashboard';
+import PatientLoginPage from './pages/PatientLoginPage';
+import PatientRegisterPage from './pages/PatientRegisterPage';
 import './App.css';
 
 function App() {
@@ -12,6 +14,8 @@ function App() {
         <div className="glow-bg"></div>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/patient/login" element={<PatientLoginPage />} />
+          <Route path="/patient/register" element={<PatientRegisterPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/doctor" element={<DoctorDashboard />} />
           <Route path="/patient" element={<PatientDashboard />} />
