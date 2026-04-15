@@ -24,5 +24,3 @@ public interface TelemedicineSessionService {
 
   TelemedicineSessionDto addSessionNotes(Long sessionId, AddSessionNotesRequest request);
 }
-
-

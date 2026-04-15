@@ -105,6 +105,19 @@ const patientService = {
             console.error(`Error deleting medical report ${reportId} for patient ${id}`, error);
             throw error;
         }
+    },
+    searchDoctors: async (specialty) => {
+        try {
+            const params = specialty ? { specialty } : {};
+            const response = await axios.get(`${API_URL}/doctors/search`, {
+                ...getAuthHeaders(),
+                params
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error searching doctors', error);
+            throw error;
+        }
     }
 };
 
