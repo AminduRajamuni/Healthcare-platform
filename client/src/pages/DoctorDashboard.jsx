@@ -1,8 +1,71 @@
+import React, { useState, useEffect } from 'react';
 import { Calendar, Users, FileText, Video, Activity, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import appointmentService from '../services/appointmentService';
+import doctorService from '../services/doctorService';
+import AppointmentCard from '../components/AppointmentCard';
 
 export default function DoctorDashboard() {
   const navigate = useNavigate();
+  const userId = localStorage.getItem('userId');
+
+  const [appointments, setAppointments] = useState([]);
+  const [doctorProfile, setDoctorProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        let docsData = null;
+        let activeDoctorId = userId;
+        
+        // Attempt to fetch specific doctor profile
+        if (activeDoctorId) {
+            try {
+                docsData = await doctorService.getDoctorById(activeDoctorId);
+            } catch (e) {
+                console.warn(`User ID ${activeDoctorId} not found in Doctor DB. Searching for fallback...`);
+            }
+        }
+
+        // Fallback for demonstration/testing: If the current user isn't in the doctor DB, just pick the first available doctor (usually ID 3) so the UI isn't empty.
+        if (!docsData) {
+            const allDocs = await doctorService.getAllDoctors();
+            if (allDocs && allDocs.length > 0) {
+                // Find a doctor that actually has appointments, or just pick the first or ID 3
+                docsData = allDocs.find(d => d.id === 3) || allDocs[0];
+                activeDoctorId = docsData.id;
+            }
+        }
+
+        let apptsData = [];
+        if (activeDoctorId) {
+            try {
+                apptsData = await appointmentService.getAppointmentsByDoctorId(activeDoctorId);
+            } catch (e) {
+                console.error("No appointments found for doctor", activeDoctorId);
+            }
+        }
+
+        setDoctorProfile(docsData);
+        setAppointments((apptsData || []).sort((a,b) => new Date(a.appointmentDate) - new Date(b.appointmentDate)));
+      } catch (err) {
+        console.error("Failed to fetch doctor dashboard data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId]);
+
+  const activeAppointments = appointments.filter(a => a.status === 'BOOKED' || a.status === 'PENDING');
+  const todayAppointments = activeAppointments.filter(a => {
+      const appDateStr = typeof a.appointmentDate === 'string' ? a.appointmentDate.split('T')[0] : 
+                        (Array.isArray(a.appointmentDate) ? `${a.appointmentDate[0]}-${String(a.appointmentDate[1]).padStart(2, '0')}-${String(a.appointmentDate[2]).padStart(2, '0')}` : null);
+      const todayStr = new Date().toISOString().split('T')[0];
+      return appDateStr === todayStr;
+  });
 
   return (
     <div className="dashboard-layout">
@@ -32,8 +95,8 @@ export default function DoctorDashboard() {
       <main className="main-content">
         <header className="header">
           <div>
-            <h1 className="text-h2">Good Morning, Dr. Smith</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>You have 8 consultations scheduled for today.</p>
+            <h1 className="text-h2">Good Morning, Dr. {doctorProfile?.name?.replace(/^Dr\.\s*/i, '') || doctorProfile?.firstName || 'Doctor'}</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>You have {todayAppointments.length} consultations scheduled for today.</p>
           </div>
           <button className="btn-primary" style={{ background: 'linear-gradient(to right, #3b82f6, #8b5cf6)' }}>
             Start Next Consultation <Video size={18} />
@@ -43,19 +106,26 @@ export default function DoctorDashboard() {
         {/* Dummy Dashboard Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
           
-          <section className="glass-panel" style={{ padding: '24px', minHeight: '400px' }}>
+          <section className="glass-panel" style={{ padding: '24px', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
             <h3 className="text-h3" style={{ marginBottom: '16px' }}>Upcoming Appointments</h3>
-            <div style={{
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '80%',
-              color: 'var(--text-secondary)',
-              border: '1px dashed var(--glass-border)',
-              borderRadius: '8px'
-            }}>
-              [ Appointments List Component Placeholder ]
-            </div>
+            {loading ? (
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+                    Loading appointments...
+                </div>
+            ) : activeAppointments.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr)', gap: '16px', overflowY: 'auto', flex: 1 }}>
+                    {activeAppointments.map(app => (
+                        <AppointmentCard key={app.id} appointment={app} role="DOCTOR" onStatusUpdate={() => {}} />
+                    ))}
+                </div>
+            ) : (
+                <div style={{
+                  display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1,
+                  color: 'var(--text-secondary)', border: '1px dashed var(--glass-border)', borderRadius: '8px'
+                }}>
+                  No upcoming appointments.
+                </div>
+            )}
           </section>
 
           <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

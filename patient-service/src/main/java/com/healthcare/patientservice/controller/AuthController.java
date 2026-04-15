@@ -33,6 +33,8 @@ public class AuthController {
                 Map<String, String> response = new HashMap<>();
                 response.put("token", token);
                 response.put("role", patient.getRole().name());
+                response.put("id", patient.getId().toString());
+                response.put("firstName", patient.getFirstName());
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }

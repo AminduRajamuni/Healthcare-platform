@@ -1,8 +1,58 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Activity } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { ArrowRight, Activity, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Pointing to proxy which routes to patient-service where AuthController handles /api/auth/login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid email or password');
+      }
+
+      const data = await response.json();
+      
+      // Save token (usually in localStorage)
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.id);
+        localStorage.setItem('firstName', data.firstName);
+        localStorage.setItem('role', data.role);
+      }
+
+      // Navigate based on role
+      const role = data.role ? data.role.toUpperCase() : 'PATIENT';
+      if (role === 'ADMIN') {
+        navigate('/admin');
+      } else if (role === 'DOCTOR') {
+        navigate('/doctor');
+      } else {
+        navigate('/patient');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
@@ -28,14 +78,23 @@ export default function Login() {
         </div>
 
         {/* Login Form Container */}
-        <div className="glass-panel" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form className="glass-panel" onSubmit={handleLogin} style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
+          {error && (
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
+              {error}
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Email address</label>
             <input 
               type="email" 
               className="glass-input" 
               placeholder="you@example.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
 
@@ -48,25 +107,25 @@ export default function Login() {
               type="password" 
               className="glass-input" 
               placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
 
-          <button className="btn-primary" style={{ width: '100%', marginTop: '8px' }}>
-            Log in <ArrowRight size={18} />
+          <button type="submit" disabled={isLoading} className="btn-primary" style={{ width: '100%', marginTop: '8px', opacity: isLoading ? 0.7 : 1 }}>
+            {isLoading ? <><Loader2 size={18} className="animate-spin" /> Logging in...</> : <>Log in <ArrowRight size={18} /></>}
           </button>
-        </div>
-
-        {/* Development Quick Links */}
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            DEVELOPMENT: QUICK LOGIN AS
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <button className="btn-outline" onClick={() => navigate('/admin')}>Admin</button>
-            <button className="btn-outline" onClick={() => navigate('/doctor')}>Doctor</button>
-            <button className="btn-outline" onClick={() => navigate('/patient')}>Patient</button>
+          
+          <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+             Don't have an account? <br/>
+             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                <Link to="/register/patient" style={{ color: 'var(--gradient-1)' }}>Register as Patient</Link>
+                <span>|</span>
+                <Link to="/register/doctor" style={{ color: '#3b82f6' }}>Register as Doctor</Link>
+             </div>
           </div>
-        </div>
+        </form>
 
       </div>
     </div>

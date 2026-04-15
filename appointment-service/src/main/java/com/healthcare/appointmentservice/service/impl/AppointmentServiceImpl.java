@@ -113,6 +113,16 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    public List<Appointment> getAppointmentsByPatientId(Long patientId) {
+        return appointmentRepository.findByPatientId(patientId);
+    }
+
+    @Override
+    public List<Appointment> getAppointmentsByDoctorId(Long doctorId) {
+        return appointmentRepository.findByDoctorId(doctorId);
+    }
+
+    @Override
     public List<Appointment> getAllAppointments() {
         return appointmentRepository.findAll();
     }
@@ -152,5 +162,13 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
         appointment.setStatus(status);
         return appointmentRepository.save(appointment);
+    }
+
+    @Override
+    public void deleteAppointment(Long id) {
+        Appointment appointment = appointmentRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Appointment not found with ID: " + id)
+        );
+        appointmentRepository.delete(appointment);
     }
 }
