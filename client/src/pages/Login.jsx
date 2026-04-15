@@ -4,15 +4,20 @@ import { ArrowRight, Activity, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const isRegistered = queryParams.get('registered') === 'true';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(isRegistered ? 'Registration successful! Please log in.' : null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       // Pointing to proxy which routes to patient-service where AuthController handles /api/auth/login
@@ -36,17 +41,25 @@ export default function Login() {
         localStorage.setItem('userId', data.id);
         localStorage.setItem('firstName', data.firstName);
         localStorage.setItem('role', data.role);
+        if (data.email) {
+          localStorage.setItem('email', data.email);
+        }
       }
 
-      // Navigate based on role
-      const role = data.role ? data.role.toUpperCase() : 'PATIENT';
-      if (role === 'ADMIN') {
-        navigate('/admin');
-      } else if (role === 'DOCTOR') {
-        navigate('/doctor');
-      } else {
-        navigate('/patient');
-      }
+      setSuccess('Logged in successfully! Redirecting...');
+      
+      // Delay navigation slightly to show the success message
+      setTimeout(() => {
+        // Navigate based on role
+        const role = data.role ? data.role.toUpperCase() : 'PATIENT';
+        if (role === 'ADMIN') {
+          navigate('/admin');
+        } else if (role === 'DOCTOR') {
+          navigate('/doctor');
+        } else {
+          navigate('/patient');
+        }
+      }, 1000);
     } catch (err) {
       setError(err.message || 'An error occurred during login');
     } finally {
@@ -83,6 +96,11 @@ export default function Login() {
           {error && (
             <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
               {error}
+            </div>
+          )}
+          {success && (
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '12px', borderRadius: '8px', fontSize: '0.9rem' }}>
+              {success}
             </div>
           )}
 

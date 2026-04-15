@@ -8,6 +8,7 @@ import AppointmentCard from '../components/AppointmentCard';
 export default function DoctorDashboard() {
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
+  const userEmail = localStorage.getItem('email');
 
   const [appointments, setAppointments] = useState([]);
   const [doctorProfile, setDoctorProfile] = useState(null);
@@ -18,14 +19,22 @@ export default function DoctorDashboard() {
       setLoading(true);
       try {
         let docsData = null;
-        let activeDoctorId = userId;
+        let activeDoctorId = null;
         
         // Attempt to fetch specific doctor profile
-        if (activeDoctorId) {
+        if (userEmail) {
             try {
-                docsData = await doctorService.getDoctorById(activeDoctorId);
+                docsData = await doctorService.getDoctorByEmail(userEmail);
+                activeDoctorId = docsData.id;
             } catch (e) {
-                console.warn(`User ID ${activeDoctorId} not found in Doctor DB. Searching for fallback...`);
+                console.warn(`User Email ${userEmail} not found in Doctor DB. Searching for fallback...`);
+            }
+        } else if (userId) {
+            try {
+                docsData = await doctorService.getDoctorById(userId);
+                activeDoctorId = docsData.id;
+            } catch (e) {
+                console.warn(`User ID ${userId} not found in Doctor DB. Searching for fallback...`);
             }
         }
 

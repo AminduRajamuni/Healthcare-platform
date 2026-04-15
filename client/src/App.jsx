@@ -19,6 +19,7 @@ import PatientReportsPage from './pages/patient/PatientReportsPage';
 import PatientSearchDoctorsPage from './pages/patient/PatientSearchDoctorsPage';
 import PatientProfilePage from './pages/PatientProfilePage';
 import AdminManagePatientsPage from './pages/admin/AdminManagePatientsPage';
+import SymptomChecker from './pages/SymptomChecker';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -109,6 +110,11 @@ function App() {
           <Route path="/patient" element={
             <ProtectedRoute allowedRoles={['PATIENT']}>
                 <PatientDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/symptom-checker" element={
+            <ProtectedRoute allowedRoles={['PATIENT']}>
+                <SymptomChecker />
             </ProtectedRoute>
           } />
         </Routes>
