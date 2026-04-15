@@ -36,6 +36,13 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    public Doctor getDoctorByEmail(String email) {
+        return doctorRepository.findByEmail(email).orElseThrow(
+                () -> new ResourceNotFoundException("Doctor", "email", email)
+        );
+    }
+
+    @Override
     public List<Doctor> getAllDoctors() {
         return doctorRepository.findAll();
     }

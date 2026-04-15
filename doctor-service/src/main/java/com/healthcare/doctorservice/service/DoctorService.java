@@ -10,6 +10,8 @@ public interface DoctorService {
 
     Doctor getDoctorById(Long id);
 
+    Doctor getDoctorByEmail(String email);
+
     List<Doctor> getAllDoctors();
 
     List<Doctor> searchDoctors(String specialization, Boolean isAvailable, String name);

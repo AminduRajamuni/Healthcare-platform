@@ -24,7 +24,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/doctors").permitAll() // POST route for registration is at the class level typically, check logic
+                .requestMatchers("/api/doctors/register").permitAll() // POST route for registration is at the class level typically, check logic
                 .anyRequest().authenticated()
             )
             .addFilterBefore(headerRoleAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import appointmentService from '../services/appointmentService';
 import doctorService from '../services/doctorService';
 import patientService from '../services/patientService';
+import adminService from '../services/adminService';
 import AppointmentCard from '../components/AppointmentCard';
 
 export default function AdminDashboard() {
@@ -19,15 +20,17 @@ export default function AdminDashboard() {
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [userTab, setUserTab] = useState('DOCTORS');
+  const [stats, setStats] = useState({ totalUsers: '-', totalDoctors: '-', totalAppointments: '-', totalPayments: '-' });
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [apptsData, docsData, patsData] = await Promise.all([
+        const [apptsData, docsData, patsData, statsData] = await Promise.all([
             appointmentService.getAllAppointments(),
             doctorService.getAllDoctors(),
-            patientService.getAllPatients()
+            patientService.getAllPatients(),
+            adminService.getPlatformStats()
         ]);
         
         // Sort descending by date
@@ -35,6 +38,7 @@ export default function AdminDashboard() {
         setAppointments(sorted || []);
         setDoctors(docsData || []);
         setPatients(patsData || []);
+        if (statsData) setStats(statsData);
       } catch (err) {
         console.error("Failed to fetch dashboard core data", err);
       } finally {
@@ -142,10 +146,10 @@ export default function AdminDashboard() {
             {/* Dummy Metrics */}
             <section className="card-grid">
               {[
-                { title: 'Total Patients', value: '2,405', change: '+12%' },
-                { title: 'Active Doctors', value: '142', change: '+3%' },
-                { title: 'Today\'s Appointments', value: '384', change: '+24%' },
-                { title: 'Revenue (MTD)', value: '$45,231', change: '+8%' }
+                { title: 'Total Users', value: stats.totalUsers, change: '' },
+                { title: 'Total Doctors', value: stats.totalDoctors, change: '' },
+                { title: 'Total Appointments', value: stats.totalAppointments, change: '' },
+                { title: 'Total Payments', value: stats.totalPayments, change: '' }
               ].map((stat, i) => (
                 <div key={i} className="glass-panel" style={{ padding: '24px' }}>
                   <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{stat.title}</p>
