@@ -1,8 +1,104 @@
-import { Users, Activity, Calendar, CreditCard, Video, Settings, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Activity, Calendar as CalendarIcon, CreditCard, Video, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import appointmentService from '../services/appointmentService';
+import doctorService from '../services/doctorService';
+import patientService from '../services/patientService';
+import AppointmentCard from '../components/AppointmentCard';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('Overview');
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // For "All Appointments" sub tabs
+  const [appCategory, setAppCategory] = useState('BOOKED'); 
+
+  // For users & roles
+  const [doctors, setDoctors] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [userTab, setUserTab] = useState('DOCTORS');
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [apptsData, docsData, patsData] = await Promise.all([
+            appointmentService.getAllAppointments(),
+            doctorService.getAllDoctors(),
+            patientService.getAllPatients()
+        ]);
+        
+        // Sort descending by date
+        const sorted = apptsData.sort((a,b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
+        setAppointments(sorted || []);
+        setDoctors(docsData || []);
+        setPatients(patsData || []);
+      } catch (err) {
+        console.error("Failed to fetch dashboard core data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  const handleCancel = async (appointment) => {
+    if(!window.confirm("Are you sure you want to cancel this appointment as Admin?")) return;
+    try {
+        await appointmentService.cancelAppointment(appointment.id);
+        setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status: 'CANCELLED' } : a));
+    } catch (err) {
+        alert("Failed to cancel appointment");
+    }
+  };
+
+  const handleHardDelete = async (appointment) => {
+    if(!window.confirm("WARNING: This will permanently delete the appointment record. Continue?")) return;
+    try {
+        await appointmentService.hardDeleteAppointment(appointment.id);
+        setAppointments(prev => prev.filter(a => a.id !== appointment.id));
+    } catch (err) {
+        alert("Failed to delete appointment permanently");
+    }
+  };
+
+  const handleVerifyDoctor = async (id) => {
+      try {
+          const verified = await doctorService.verifyDoctor(id);
+          setDoctors(prev => prev.map(d => d.id === id ? verified : d));
+      } catch(e) {
+          alert('Failed to verify doctor');
+      }
+  };
+
+  const handleDeleteDoctor = async (id) => {
+      if(!window.confirm("Delete this doctor?")) return;
+      try {
+          await doctorService.deleteDoctor(id);
+          setDoctors(prev => prev.filter(d => d.id !== id));
+      } catch(e) {
+          alert('Failed to delete doctor');
+      }
+  };
+
+  const handleDeletePatient = async (id) => {
+      if(!window.confirm("Delete this patient account?")) return;
+      try {
+          await patientService.deletePatient(id);
+          setPatients(prev => prev.filter(p => p.id !== id));
+      } catch(e) {
+          alert('Failed to delete patient');
+      }
+  };
+
+  const recentAppointments = appointments.slice(0, 4);
+  
+  const filteredAppointments = appointments.filter(a => {
+      if (appCategory === 'ALL') return true;
+      return a.status === appCategory;
+  });
 
   return (
     <div className="dashboard-layout">
@@ -16,9 +112,9 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-item active"><Activity size={20} /> Overview</div>
-          <div className="nav-item"><Users size={20} /> Users & Roles</div>
-          <div className="nav-item"><Calendar size={20} /> All Appointments</div>
+          <div className={`nav-item ${activeTab === 'Overview' ? 'active' : ''}`} onClick={() => setActiveTab('Overview')}><Activity size={20} /> Overview</div>
+          <div className={`nav-item ${activeTab === 'Users & Roles' ? 'active' : ''}`} onClick={() => setActiveTab('Users & Roles')}><Users size={20} /> Users & Roles</div>
+          <div className={`nav-item ${activeTab === 'All Appointments' ? 'active' : ''}`} onClick={() => setActiveTab('All Appointments')}><CalendarIcon size={20} /> All Appointments</div>
           <div className="nav-item"><CreditCard size={20} /> Payments</div>
           <div className="nav-item"><Video size={20} /> Telemedicine Logs</div>
           <div className="nav-item"><Settings size={20} /> System Settings</div>
@@ -30,48 +126,185 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="main-content">
+      <main className="main-content" style={{ overflowY: 'auto' }}>
         <header className="header">
           <div>
-            <h1 className="text-h2">Welcome back, Admin</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Here's what's happening across the platform today.</p>
+            <h1 className="text-h2">{activeTab === 'Overview' ? 'Welcome back, Admin' : activeTab}</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>
+                {activeTab === 'Overview' ? "Here's what's happening across the platform today." : "Manage and track all platform records."}
+            </p>
           </div>
           <button className="btn-primary">Generate Report</button>
         </header>
 
-        {/* Dummy Metrics */}
-        <section className="card-grid">
-          {[
-            { title: 'Total Patients', value: '2,405', change: '+12%' },
-            { title: 'Active Doctors', value: '142', change: '+3%' },
-            { title: 'Today\'s Appointments', value: '384', change: '+24%' },
-            { title: 'Revenue (MTD)', value: '$45,231', change: '+8%' }
-          ].map((stat, i) => (
-            <div key={i} className="glass-panel" style={{ padding: '24px' }}>
-              <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{stat.title}</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '8px' }}>
-                <h3 className="text-h1" style={{ fontSize: '2.5rem' }}>{stat.value}</h3>
-                <span style={{ color: '#34d399', fontWeight: 500 }}>{stat.change}</span>
-              </div>
-            </div>
-          ))}
-        </section>
+        {activeTab === 'Overview' && (
+          <>
+            {/* Dummy Metrics */}
+            <section className="card-grid">
+              {[
+                { title: 'Total Patients', value: '2,405', change: '+12%' },
+                { title: 'Active Doctors', value: '142', change: '+3%' },
+                { title: 'Today\'s Appointments', value: '384', change: '+24%' },
+                { title: 'Revenue (MTD)', value: '$45,231', change: '+8%' }
+              ].map((stat, i) => (
+                <div key={i} className="glass-panel" style={{ padding: '24px' }}>
+                  <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{stat.title}</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '8px' }}>
+                    <h3 className="text-h1" style={{ fontSize: '2.5rem' }}>{stat.value}</h3>
+                    <span style={{ color: '#34d399', fontWeight: 500 }}>{stat.change}</span>
+                  </div>
+                </div>
+              ))}
+            </section>
 
-        {/* Placeholder Table area */}
-        <section className="glass-panel" style={{ padding: '24px', flex: 1, minHeight: '300px' }}>
-          <h3 className="text-h3" style={{ marginBottom: '16px' }}>Recent System Activity</h3>
-          <div style={{
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            height: '80%',
-            color: 'var(--text-secondary)',
-            border: '1px dashed var(--glass-border)',
-            borderRadius: '8px'
-          }}>
-            [ Activity Log Component Placeholder ]
-          </div>
-        </section>
+            {/* Recent Activity -> Recent Appointments */}
+            <section style={{ flex: 1, minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 className="text-h3">Recent System Activity (Appointments)</h3>
+                  <button className="btn-outline" onClick={() => setActiveTab('All Appointments')} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>View All</button>
+              </div>
+              
+              {loading ? (
+                  <div style={{ color: 'var(--text-secondary)' }}>Loading recent activities...</div>
+              ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+                      {recentAppointments.length > 0 ? (
+                          recentAppointments.map(app => (
+                              <AppointmentCard key={app.id} appointment={app} onCancel={handleCancel} onHardDelete={handleHardDelete} role="ADMIN" />
+                          ))
+                      ) : (
+                          <div style={{ color: 'var(--text-secondary)' }}>No recent activity records.</div>
+                      )}
+                  </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {activeTab === 'All Appointments' && (
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+             {/* Dynamic Filter Tabs */}
+             <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
+                 {['ALL', 'BOOKED', 'CANCELLED', 'COMPLETED'].map(status => (
+                     <button 
+                        key={status}
+                        onClick={() => setAppCategory(status)}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: appCategory === status ? 'var(--gradient-1)' : 'var(--text-secondary)',
+                            fontWeight: appCategory === status ? 600 : 400,
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            borderBottom: appCategory === status ? '2px solid var(--gradient-1)' : '2px solid transparent',
+                            transition: 'all 0.2s'
+                        }}
+                     >
+                         {status.charAt(0) + status.slice(1).toLowerCase()}
+                     </button>
+                 ))}
+             </div>
+
+             {loading ? (
+                  <div style={{ color: 'var(--text-secondary)' }}>Loading all appointments data...</div>
+             ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+                      {filteredAppointments.length > 0 ? (
+                          filteredAppointments.map(app => (
+                              <AppointmentCard key={app.id} appointment={app} onCancel={handleCancel} onHardDelete={handleHardDelete} role="ADMIN" />
+                          ))
+                      ) : (
+                          <div style={{ padding: '24px', background: 'var(--glass-bg)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                              No appointments found for category: {appCategory.toLowerCase()}.
+                          </div>
+                      )}
+                  </div>
+             )}
+          </section>
+        )}
+
+        {activeTab === 'Users & Roles' && (
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+             <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
+                 {['DOCTORS', 'PATIENTS'].map(tab => (
+                     <button 
+                        key={tab}
+                        onClick={() => setUserTab(tab)}
+                        style={{
+                            background: 'transparent', border: 'none', cursor: 'pointer',
+                            color: userTab === tab ? 'var(--gradient-1)' : 'var(--text-secondary)',
+                            fontWeight: userTab === tab ? 600 : 400,
+                            padding: '8px 16px',
+                            borderBottom: userTab === tab ? '2px solid var(--gradient-1)' : '2px solid transparent',
+                            transition: 'all 0.2s'
+                        }}
+                     >
+                         {tab}
+                     </button>
+                 ))}
+             </div>
+
+             {userTab === 'DOCTORS' && (
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                     {doctors.map(doc => (
+                         <div key={doc.id} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                 <div>
+                                    <h4 className="text-h3" style={{ fontSize: '1.2rem', marginBottom: '4px' }}>
+                                        {doc.name || `${doc.firstName} ${doc.lastName}`}
+                                    </h4>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{doc.specialization}</p>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{doc.email}</p>
+                                 </div>
+                                 <span style={{ 
+                                     fontSize: '0.8rem', padding: '4px 8px', borderRadius: '12px', fontWeight: 600,
+                                     background: doc.isVerified ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                     color: doc.isVerified ? '#10b981' : '#f59e0b'
+                                 }}>
+                                     {doc.isVerified ? 'Verified' : 'Pending'}
+                                 </span>
+                             </div>
+                             
+                             <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '12px' }}>
+                                {!doc.isVerified && (
+                                    <button className="btn-primary" style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }} onClick={() => handleVerifyDoctor(doc.id)}>
+                                        Verify
+                                    </button>
+                                )}
+                                <button className="btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.9rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }} onClick={() => handleDeleteDoctor(doc.id)}>
+                                    Delete
+                                </button>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+             )}
+
+             {userTab === 'PATIENTS' && (
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                     {patients.map(pat => (
+                         <div key={pat.id} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                 <div>
+                                    <h4 className="text-h3" style={{ fontSize: '1.2rem', marginBottom: '4px' }}>
+                                        {pat.firstName} {pat.lastName}
+                                    </h4>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{pat.email}</p>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{pat.phone}</p>
+                                 </div>
+                             </div>
+                             
+                             <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '12px' }}>
+                                <button className="btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.9rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }} onClick={() => handleDeletePatient(pat.id)}>
+                                    Delete Account
+                                </button>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+             )}
+          </section>
+        )}
       </main>
     </div>
   );
