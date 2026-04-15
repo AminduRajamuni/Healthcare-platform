@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Heart, Calendar, Stethoscope, CreditCard, Clock, LogOut } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appointmentService from '../services/appointmentService';
 import AppointmentCard from '../components/AppointmentCard';
 import BookAppointmentModal from '../components/BookAppointmentModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PatientSidebar from '../components/PatientSidebar';
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
@@ -72,27 +73,7 @@ export default function PatientDashboard() {
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'var(--accent-bg)', padding: '8px', borderRadius: '8px' }}>
-            <Activity color="#ec4899" size={24} />
-          </div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white' }}>Patient Portal</h2>
-        </div>
-
-        <nav className="sidebar-nav">
-          <div className="nav-item"><Heart size={20} /> My Health</div>
-          <div className="nav-item active"><Calendar size={20} /> Appointments</div>
-          <div className="nav-item"><Stethoscope size={20} /> Symptom Checker</div>
-          <div className="nav-item"><Clock size={20} /> Medical History</div>
-          <div className="nav-item"><CreditCard size={20} /> Invoices & Payments</div>
-        </nav>
-
-        <div style={{ marginTop: 'auto' }}>
-          <div className="nav-item" onClick={() => navigate('/')}><LogOut size={20} /> Sign Out</div>
-        </div>
-      </aside>
+      <PatientSidebar />
 
       {/* Main Content */}
       <main className="main-content">
