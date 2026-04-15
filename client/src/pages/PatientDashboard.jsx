@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Heart, Calendar, Stethoscope, CreditCard, Clock, LogOut } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appointmentService from '../services/appointmentService';
 import AppointmentCard from '../components/AppointmentCard';
 import BookAppointmentModal from '../components/BookAppointmentModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PatientSidebar from '../components/PatientSidebar';
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
@@ -72,6 +73,7 @@ export default function PatientDashboard() {
 
   return (
     <div className="dashboard-layout">
+      <PatientSidebar />
       {/* Sidebar */}
       <aside className="sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -118,6 +118,7 @@ export default function AdminDashboard() {
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeTab === 'Overview' ? 'active' : ''}`} onClick={() => setActiveTab('Overview')}><Activity size={20} /> Overview</div>
           <div className={`nav-item ${activeTab === 'Users & Roles' ? 'active' : ''}`} onClick={() => setActiveTab('Users & Roles')}><Users size={20} /> Users & Roles</div>
+          <div className="nav-item" onClick={() => navigate('/admin/patients')}><Users size={20} /> Manage Patients</div>
           <div className={`nav-item ${activeTab === 'All Appointments' ? 'active' : ''}`} onClick={() => setActiveTab('All Appointments')}><CalendarIcon size={20} /> All Appointments</div>
           <div className="nav-item"><CreditCard size={20} /> Payments</div>
           <div className="nav-item"><Video size={20} /> Telemedicine Logs</div>
@@ -233,7 +234,13 @@ export default function AdminDashboard() {
                  {['DOCTORS', 'PATIENTS'].map(tab => (
                      <button 
                         key={tab}
-                        onClick={() => setUserTab(tab)}
+                        onClick={() => {
+                            if (tab === 'PATIENTS') {
+                              navigate('/admin/patients');
+                            } else {
+                              setUserTab(tab);
+                            }
+                        }}
                         style={{
                             background: 'transparent', border: 'none', cursor: 'pointer',
                             color: userTab === tab ? 'var(--gradient-1)' : 'var(--text-secondary)',
