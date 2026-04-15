@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,16 +24,9 @@ public class PatientController {
     return new ResponseEntity<>(savedPatient, HttpStatus.CREATED);
   }
 
-  // Login and get JWT token
-  @PostMapping("/login")
-  public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequest loginRequest) {
-    AuthResponseDto response = patientService.login(loginRequest);
-    return new ResponseEntity<>(response, HttpStatus.OK);
-  }
-
   // Get Patient By ID (secured)
   @GetMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<PatientProfileDto> getPatientById(@PathVariable("id") Long patientId) {
     PatientProfileDto patient = patientService.getPatientById(patientId);
     return new ResponseEntity<>(patient, HttpStatus.OK);
@@ -42,7 +34,7 @@ public class PatientController {
 
   // Get All Patients (admin only)
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<List<PatientListItemDto>> getAllPatients(
       @RequestParam(value = "page", defaultValue = "0") int page,
       @RequestParam(value = "size", defaultValue = "20") int size) {
@@ -66,7 +58,7 @@ public class PatientController {
 
   // Update Patient (secured)
   @PutMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<PatientProfileDto> updatePatient(@PathVariable("id") Long patientId,
                              @Valid @RequestBody UpdatePatientRequest request) {
     PatientProfileDto updatedPatient = patientService.updatePatient(patientId, request);
@@ -75,15 +67,22 @@ public class PatientController {
 
   // Delete Patient (secured - admin only for safety)
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN')")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Void> deletePatient(@PathVariable("id") Long patientId) {
     patientService.deletePatient(patientId);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
+  // Search doctors (all authenticated roles)
+  @GetMapping("/doctors/search")
+  public ResponseEntity<List<DoctorDto>> searchDoctors(@RequestParam(value = "specialty", required = false) String specialty) {
+    List<DoctorDto> doctors = patientService.searchDoctors(specialty);
+    return new ResponseEntity<>(doctors, HttpStatus.OK);
+  }
+
   // Get Medical History (patient/admin/doctor)
   @GetMapping("/{id}/medical-history")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<List<MedicalHistoryDto>> getMedicalHistory(@PathVariable("id") Long patientId) {
     List<MedicalHistoryDto> history = patientService.getMedicalHistory(patientId);
     return new ResponseEntity<>(history, HttpStatus.OK);
@@ -91,7 +90,7 @@ public class PatientController {
 
   // Add Medical History (doctor/admin)
   @PostMapping("/{id}/medical-history")
-  @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")
   public ResponseEntity<MedicalHistoryDto> addMedicalHistory(@PathVariable("id") Long patientId,
                               @Valid @RequestBody CreateMedicalHistoryRequest request) {
     MedicalHistoryDto dto = patientService.addMedicalHistory(patientId, request);
@@ -100,7 +99,7 @@ public class PatientController {
 
   // Get Prescriptions (patient/admin/doctor)
   @GetMapping("/{id}/prescriptions")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<List<PrescriptionDto>> getPrescriptions(@PathVariable("id") Long patientId) {
     List<PrescriptionDto> prescriptions = patientService.getPrescriptions(patientId);
     return new ResponseEntity<>(prescriptions, HttpStatus.OK);
@@ -108,7 +107,7 @@ public class PatientController {
 
   // Add Prescription (doctor/admin)
   @PostMapping("/{id}/prescriptions")
-  @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")
   public ResponseEntity<PrescriptionDto> addPrescription(@PathVariable("id") Long patientId,
                               @Valid @RequestBody CreatePrescriptionRequest request) {
     PrescriptionDto dto = patientService.addPrescription(patientId, request);
@@ -117,7 +116,7 @@ public class PatientController {
 
   // List Medical Reports (patient/admin/doctor)
   @GetMapping("/{id}/reports")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId == principal.id)")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<List<MedicalReportDto>> getMedicalReports(@PathVariable("id") Long patientId) {
     List<MedicalReportDto> reports = patientService.getMedicalReports(patientId);
     return new ResponseEntity<>(reports, HttpStatus.OK);
@@ -125,7 +124,7 @@ public class PatientController {
 
   // Upload Medical Report (patient only)
   @PostMapping(value = "/{id}/reports", consumes = "multipart/form-data")
-  @PreAuthorize("hasRole('PATIENT') and #patientId == principal.id")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') and #patientId.toString().equals(authentication.principal)")
   public ResponseEntity<MedicalReportDto> uploadMedicalReport(@PathVariable("id") Long patientId,
                                 @RequestPart("file") org.springframework.web.multipart.MultipartFile file,
                                 @RequestPart(value = "description", required = false) String description) {
@@ -154,10 +153,36 @@ public class PatientController {
 
   // Delete Medical Report (patient or admin)
   @DeleteMapping("/{id}/reports/{reportId}")
-  @PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId == principal.id)")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<Void> deleteMedicalReport(@PathVariable("id") Long patientId,
                           @PathVariable("reportId") Long reportId) {
     patientService.deleteMedicalReport(patientId, reportId);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
+
+  // Book appointment for patient (patient or admin)
+  @PostMapping("/{id}/appointments")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
+  public ResponseEntity<AppointmentDto> bookAppointment(@PathVariable("id") Long patientId,
+                             @Valid @RequestBody BookAppointmentRequest request) {
+    AppointmentDto dto = patientService.bookAppointment(patientId, request);
+    return new ResponseEntity<>(dto, HttpStatus.CREATED);
+  }
+
+  // Get all appointments for a patient
+  @GetMapping("/{id}/appointments")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
+  public ResponseEntity<List<AppointmentDto>> getPatientAppointments(@PathVariable("id") Long patientId) {
+    List<AppointmentDto> appointments = patientService.getPatientAppointments(patientId);
+    return new ResponseEntity<>(appointments, HttpStatus.OK);
+  }
+
+  // Get telemedicine video link/session info for an appointment
+  @GetMapping("/{id}/appointments/{appointmentId}/video-link")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
+  public ResponseEntity<TelemedicineSessionDto> getVideoLink(@PathVariable("id") Long patientId,
+                                   @PathVariable Long appointmentId) {
+    TelemedicineSessionDto session = patientService.getVideoLink(patientId, appointmentId);
+    return new ResponseEntity<>(session, HttpStatus.OK);
   }
 }

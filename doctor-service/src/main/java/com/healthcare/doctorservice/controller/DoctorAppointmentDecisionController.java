@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("/api/doctors/{doctorId}/appointments")
 @AllArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR')")
 public class DoctorAppointmentDecisionController {
 
     private final DoctorAppointmentDecisionService doctorAppointmentDecisionService;

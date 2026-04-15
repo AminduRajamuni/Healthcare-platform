@@ -1,0 +1,28 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: symptom-checker-service
+  jackson:
+    default-property-inclusion: non_null
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OpenAI Configuration
+#
+# Set the environment variable OPENAI_API_KEY before starting the service:
+#   Windows PowerShell : $env:OPENAI_API_KEY="sk-proj-..."
+#   Linux / macOS      : export OPENAI_API_KEY="sk-proj-..."
+# ─────────────────────────────────────────────────────────────────────────────
+openai:
+  api:
+    key: ${OPENAI_API_KEY}          # injected from environment variable
+  model: gpt-4o-mini                # change to gpt-4o for higher accuracy
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Logging
+# ─────────────────────────────────────────────────────────────────────────────
+logging:
+  level:
+    com.healthcare.symptomcheckerservice: INFO
+    org.springframework.web.client: WARN

@@ -55,11 +55,11 @@ public class Patient {
   private String gender;
 
   @CreationTimestamp
-  @Column(name = "created_at", nullable = false, updatable = false)
+  @Column(name = "created_at", nullable = true, updatable = false, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
   private LocalDateTime createdAt;
 
   @UpdateTimestamp
-  @Column(name = "updated_at", nullable = false)
+  @Column(name = "updated_at", nullable = true, columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
   private LocalDateTime updatedAt;
 
   @Enumerated(EnumType.STRING)
@@ -68,4 +68,20 @@ public class Patient {
 
   @Column(name = "is_deleted", nullable = false)
   private boolean deleted = false;
+
+  // Added to satisfy older DB schemas that have 'name' as a not null constraint
+  @Column(name = "name")
+  private String name;
+
+  @PrePersist
+  @PreUpdate
+  public void populateLegacyName() {
+      if (this.firstName != null && this.lastName != null) {
+          this.name = this.firstName + " " + this.lastName;
+      } else if (this.firstName != null) {
+          this.name = this.firstName;
+      } else if (this.lastName != null) {
+          this.name = this.lastName;
+      }
+  }
 }

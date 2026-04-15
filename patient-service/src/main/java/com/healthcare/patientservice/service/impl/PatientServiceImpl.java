@@ -9,34 +9,48 @@ import com.healthcare.patientservice.repository.MedicalHistoryRepository;
 import com.healthcare.patientservice.repository.MedicalReportRepository;
 import com.healthcare.patientservice.repository.PatientRepository;
 import com.healthcare.patientservice.repository.PrescriptionRepository;
-import com.healthcare.patientservice.security.PatientUserDetails;
-import com.healthcare.patientservice.security.jwt.JwtTokenProvider;
 import com.healthcare.patientservice.service.PatientService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PatientServiceImpl implements PatientService {
 
   private final PatientRepository patientRepository;
-  private final PasswordEncoder passwordEncoder;
-  private final JwtTokenProvider jwtTokenProvider;
   private final MedicalHistoryRepository medicalHistoryRepository;
   private final PrescriptionRepository prescriptionRepository;
   private final MedicalReportRepository medicalReportRepository;
+
+  private final RestTemplate restTemplate;
+
+  @Value("${doctor.service.base-url}")
+  private String doctorServiceBaseUrl;
+
+  @Value("${appointment.service.base-url}")
+  private String appointmentServiceBaseUrl;
+
+  @Value("${telemedicine.service.base-url}")
+  private String telemedicineServiceBaseUrl;
 
   @Override
   public PatientProfileDto registerPatient(RegisterPatientRequest request) {
@@ -52,7 +66,7 @@ public class PatientServiceImpl implements PatientService {
     patient.setPhone(request.getPhone());
     patient.setDob(request.getDob());
     patient.setGender(request.getGender());
-    patient.setPassword(passwordEncoder.encode(request.getPassword()));
+    patient.setPassword(request.getPassword());
 
     Patient saved = patientRepository.save(patient);
     return mapToProfileDto(saved);
@@ -101,39 +115,7 @@ public class PatientServiceImpl implements PatientService {
   }
 
   @Override
-  public AuthResponseDto login(LoginRequest loginRequest) {
-    // 1. Find patient by email
-    Patient patient = patientRepository.findByEmailAndDeletedFalse(loginRequest.getEmail())
-        .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
-
-    // 2. Compare raw password with hashed password
-    if (!passwordEncoder.matches(loginRequest.getPassword(), patient.getPassword())) {
-      throw new InvalidCredentialsException("Invalid email or password");
-    }
-
-    // 3. Build Authentication manually for JWT generation
-    PatientUserDetails userDetails = new PatientUserDetails(patient);
-    Authentication authentication = new UsernamePasswordAuthenticationToken(
-        userDetails,
-        null,
-        userDetails.getAuthorities()
-    );
-
-    String token = jwtTokenProvider.generateToken(authentication);
-    long expiresIn = jwtTokenProvider.getJwtExpirationInMs();
-
-    AuthResponseDto response = new AuthResponseDto();
-    response.setAccessToken(token);
-    response.setExpiresIn(expiresIn);
-    response.setPatientId(patient.getId());
-    response.setEmail(patient.getEmail());
-    response.setRole(patient.getRole().name());
-    return response;
-  }
-
-  @Override
   public List<MedicalHistoryDto> getMedicalHistory(Long patientId) {
-    ensureCanAccessPatient(patientId);
     List<MedicalHistory> list = medicalHistoryRepository.findByPatientId(patientId);
     return list.stream().map(this::mapToMedicalHistoryDto).collect(Collectors.toList());
   }
@@ -141,7 +123,6 @@ public class PatientServiceImpl implements PatientService {
   @Override
   public MedicalHistoryDto addMedicalHistory(Long patientId, CreateMedicalHistoryRequest request) {
     // Only allow access if current user is patient, doctor, or admin; role restriction handled via controller
-    ensureCanAccessPatient(patientId);
     MedicalHistory mh = new MedicalHistory();
     mh.setPatientId(patientId);
     mh.setCondition(request.getCondition());
@@ -153,7 +134,6 @@ public class PatientServiceImpl implements PatientService {
 
   @Override
   public List<PrescriptionDto> getPrescriptions(Long patientId) {
-    ensureCanAccessPatient(patientId);
     List<Prescription> list = prescriptionRepository.findByPatientId(patientId);
     return list.stream().map(this::mapToPrescriptionDto).collect(Collectors.toList());
   }
@@ -161,7 +141,6 @@ public class PatientServiceImpl implements PatientService {
   @Override
   public PrescriptionDto addPrescription(Long patientId, CreatePrescriptionRequest request) {
     // Controller will restrict to DOCTOR/ADMIN, but still ensure patient exists and access is valid
-    ensureCanAccessPatient(patientId);
     Prescription p = new Prescription();
     p.setPatientId(patientId);
     p.setDoctorName(request.getDoctorName());
@@ -174,14 +153,12 @@ public class PatientServiceImpl implements PatientService {
 
   @Override
   public List<MedicalReportDto> getMedicalReports(Long patientId) {
-    ensureCanAccessPatient(patientId);
     List<MedicalReport> list = medicalReportRepository.findByPatientId(patientId);
     return list.stream().map(this::mapToMedicalReportDto).collect(Collectors.toList());
   }
 
   @Override
   public MedicalReportDto uploadMedicalReport(Long patientId, MultipartFile file, String description) {
-    ensureCanAccessPatient(patientId);
     if (file == null || file.isEmpty()) {
       throw new IllegalArgumentException("File is required");
     }
@@ -202,23 +179,125 @@ public class PatientServiceImpl implements PatientService {
 
   @Override
   public void deleteMedicalReport(Long patientId, Long reportId) {
-    ensureCanAccessPatient(patientId);
     MedicalReport report = medicalReportRepository.findByIdAndPatientId(reportId, patientId)
         .orElseThrow(() -> new ResourceNotFoundException("MedicalReport", "id", reportId));
     medicalReportRepository.delete(report);
   }
 
-  private void ensureCanAccessPatient(Long pathPatientId) {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null || !(auth.getPrincipal() instanceof PatientUserDetails userDetails)) {
-      throw new AccessDeniedException("Forbidden");
+  @Override
+  public List<DoctorDto> searchDoctors(String specialty) {
+    String url = doctorServiceBaseUrl;
+    if (specialty != null && !specialty.isBlank()) {
+      url = url + "?specialty=" + specialty;
     }
 
-    // PATIENT can only access own data
-    if (userDetails.getRole() == Role.PATIENT && !userDetails.getId().equals(pathPatientId)) {
-      throw new AccessDeniedException("Forbidden");
+    try {
+      DoctorDto[] response = restTemplate.getForObject(url, DoctorDto[].class);
+      if (response == null) {
+        return Collections.emptyList();
+      }
+      return Arrays.asList(response);
+    } catch (RestClientException ex) {
+      log.error("Failed to search doctors from doctor-service: {}", ex.getMessage());
+      return Collections.emptyList();
     }
   }
+
+  @Override
+  public AppointmentDto bookAppointment(Long patientId, BookAppointmentRequest request) {
+
+    // Build payload matching appointment-service's Appointment entity
+    Map<String, Object> payload = new HashMap<>();
+    payload.put("patientId", patientId);
+    payload.put("doctorId", request.getDoctorId());
+    // appointment-service expects field name 'appointmentDate'
+    payload.put("appointmentDate", request.getAppointmentDateTime());
+
+    try {
+      AppointmentDto response = restTemplate.postForObject(
+          appointmentServiceBaseUrl,
+          payload,
+          AppointmentDto.class
+      );
+
+      if (response == null) {
+        throw new IllegalStateException("Appointment service returned empty response");
+      }
+      return response;
+    } catch (RestClientException ex) {
+      log.error("Failed to book appointment via appointment-service: {}", ex.getMessage(), ex);
+      throw new IllegalStateException("Failed to book appointment", ex);
+    }
+  }
+
+  @Override
+  public List<AppointmentDto> getPatientAppointments(Long patientId) {
+
+    String url = appointmentServiceBaseUrl + "/patient/" + patientId;
+
+    try {
+      AppointmentDto[] response = restTemplate.getForObject(url, AppointmentDto[].class);
+      if (response == null) {
+        return Collections.emptyList();
+      }
+      return Arrays.asList(response);
+    } catch (RestClientException ex) {
+      log.error("Failed to fetch appointments from appointment-service for patient {}: {}", patientId, ex.getMessage());
+      return Collections.emptyList();
+    }
+  }
+
+  @Override
+  public TelemedicineSessionDto getVideoLink(Long patientId, Long appointmentId) {
+
+    // First fetch appointment to validate ownership
+    String appointmentUrl = appointmentServiceBaseUrl + "/" + appointmentId;
+    AppointmentDto appointment;
+    try {
+      appointment = restTemplate.getForObject(appointmentUrl, AppointmentDto.class);
+    } catch (RestClientException ex) {
+      log.error("Failed to fetch appointment {} from appointment-service: {}", appointmentId, ex.getMessage(), ex);
+      throw new IllegalStateException("Failed to fetch appointment details", ex);
+    }
+
+    if (appointment == null) {
+      throw new ResourceNotFoundException("Appointment", "id", appointmentId);
+    }
+
+    if (!patientId.equals(appointment.getPatientId())) {
+      throw new IllegalArgumentException("Forbidden");
+    }
+
+    // Call telemedicine-service to locate session(s) for this patient, then filter by appointmentId
+    String sessionUrl = telemedicineServiceBaseUrl + "/patient/" + patientId;
+    HttpHeaders headers = new HttpHeaders();
+    HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+    try {
+      ResponseEntity<TelemedicineSessionDto[]> response = restTemplate.exchange(
+          sessionUrl,
+          HttpMethod.GET,
+          entity,
+          TelemedicineSessionDto[].class
+      );
+
+      TelemedicineSessionDto[] sessions = response.getBody();
+      if (sessions == null || sessions.length == 0) {
+        throw new ResourceNotFoundException("TelemedicineSession", "patientId", patientId);
+      }
+
+      return Arrays.stream(sessions)
+          .filter(s -> appointmentId.equals(s.getAppointmentId()))
+          .findFirst()
+          .orElseThrow(() -> new ResourceNotFoundException("TelemedicineSession", "appointmentId", appointmentId));
+
+    } catch (RestClientException ex) {
+      log.error("Failed to fetch telemedicine sessions for patient {} from telemedicine-service: {}", patientId, ex.getMessage(), ex);
+      throw new IllegalStateException("Failed to fetch telemedicine session", ex);
+    }
+  }
+
+
 
   private PatientProfileDto mapToProfileDto(Patient patient) {
     PatientProfileDto dto = new PatientProfileDto();

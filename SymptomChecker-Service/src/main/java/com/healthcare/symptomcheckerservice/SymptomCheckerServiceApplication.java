@@ -9,5 +9,4 @@ public class SymptomCheckerServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(SymptomCheckerServiceApplication.class, args);
     }
-
 }

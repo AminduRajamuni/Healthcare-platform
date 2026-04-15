@@ -79,6 +79,20 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    public Doctor verifyDoctor(Long id) {
+        Doctor existingDoctor = doctorRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Doctor", "id", id)
+        );
+        existingDoctor.setIsVerified(true);
+        return doctorRepository.save(existingDoctor);
+    }
+
+    @Override
+    public List<Doctor> getUnverifiedDoctors() {
+        return doctorRepository.findByIsVerifiedFalse();
+    }
+
+    @Override
     public void deleteDoctor(Long id) {
         Doctor existingDoctor = doctorRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Doctor", "id", id)

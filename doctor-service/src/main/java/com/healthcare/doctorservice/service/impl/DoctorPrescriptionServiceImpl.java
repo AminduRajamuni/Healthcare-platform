@@ -27,7 +27,7 @@ public class DoctorPrescriptionServiceImpl implements DoctorPrescriptionService 
     private static final String PATIENT_SERVICE_BASE_URL = "http://localhost:8080/api/patients";
 
     private final DoctorRepository doctorRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @Override
     @SuppressWarnings("unchecked")
