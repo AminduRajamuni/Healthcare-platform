@@ -1,6 +1,9 @@
 package com.healthcare.doctorservice.service.impl;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -35,17 +38,44 @@ public class DoctorPrescriptionServiceImpl implements DoctorPrescriptionService 
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor", "id", doctorId));
 
-        Map<String, Object> patientServiceRequest = new HashMap<>();
-        patientServiceRequest.put("doctorName", doctor.getName());
-        patientServiceRequest.put("medicine", request.getMedicine());
-        patientServiceRequest.put("dosage", request.getDosage());
-        patientServiceRequest.put("date", request.getDate());
-
         String prescriptionUrl = PATIENT_SERVICE_BASE_URL + "/" + patientId + "/prescriptions";
+        LocalDate today = LocalDate.now();
+        List<Map<String, Object>> createdPrescriptions = new ArrayList<>();
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(prescriptionUrl, patientServiceRequest, Map.class);
-            return response.getBody();
+            for (IssuePrescriptionRequest.MedicineDosage md : request.getMedicines()) {
+                Map<String, Object> patientServiceRequest = new HashMap<>();
+                patientServiceRequest.put("doctorName", doctor.getName());
+                patientServiceRequest.put("medicine", md.getMedicine());
+                patientServiceRequest.put("dosage", md.getDosage());
+                patientServiceRequest.put("date", today);
+
+                ResponseEntity<Map> response = restTemplate.postForEntity(prescriptionUrl, patientServiceRequest, Map.class);
+                if (response.getBody() != null) {
+                    createdPrescriptions.add(response.getBody());
+                }
+            }
+
+            if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
+                Map<String, Object> patientServiceRequest = new HashMap<>();
+                patientServiceRequest.put("doctorName", doctor.getName());
+                patientServiceRequest.put("medicine", "Notes:");
+                String desc = request.getDescription();
+                if (desc.length() > 100) {
+                    desc = desc.substring(0, 100);
+                }
+                patientServiceRequest.put("dosage", desc);
+                patientServiceRequest.put("date", today);
+
+                restTemplate.postForEntity(prescriptionUrl, patientServiceRequest, Map.class);
+            }
+
+            Map<String, Object> finalResponse = new HashMap<>();
+            finalResponse.put("status", "success");
+            finalResponse.put("message", "Prescriptions issued successfully");
+            finalResponse.put("prescriptions", createdPrescriptions);
+            return finalResponse;
+
         } catch (HttpClientErrorException.NotFound ex) {
             throw new PatientNotFoundException("Patient not found with ID: " + patientId);
         } catch (HttpClientErrorException ex) {

@@ -1,6 +1,5 @@
 package com.healthcare.apigateway.filter;
 
-import com.healthcare.apigateway.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -10,6 +9,9 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.healthcare.apigateway.util.JwtUtil;
+
 import reactor.core.publisher.Mono;
 
 @Component
@@ -69,13 +71,19 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     }
 
     private boolean isSecured(ServerHttpRequest request) {
-        // Exclude /register, /login, /payhere, and /search routes from token checks
+        // Exclude public auth/search routes and PayHere callback/redirect routes from token checks.
+        // Keep /payhere/initiate secured so role headers are propagated downstream.
         String path = request.getURI().getPath();
-        return !(path.contains("/register") || 
-                 path.contains("/login") || 
-                 path.contains("/auth") ||
-                 path.contains("/payhere") ||
-                 path.contains("/search"));
+        boolean isPublicAuthOrSearch = path.contains("/register")
+                || path.contains("/login")
+                || path.contains("/auth")
+                || path.contains("/search");
+
+        boolean isPublicPayHereCallback = path.startsWith("/api/payments/payhere/notify")
+                || path.startsWith("/api/payments/payhere/return")
+                || path.startsWith("/api/payments/payhere/cancel");
+
+        return !(isPublicAuthOrSearch || isPublicPayHereCallback);
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {

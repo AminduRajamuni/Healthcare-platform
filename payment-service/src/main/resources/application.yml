@@ -9,7 +9,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/payment_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: Password123@
+    password: pass123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -21,13 +21,17 @@ spring:
         format_sql: true
 
 payhere:
-  merchant-id: 1235071
-  merchant-secret: MTg1MDkwNTIxNzQ1NDM1NjkxMTg1ODgxMjMzMTQ1MTE4NjAyOQ==
-  checkout-url: https://sandbox.payhere.lk/pay/checkout
-  return-url: ${PAYHERE_RETURN_URL:http://localhost:8086/api/payments/payhere/return}
-  cancel-url: ${PAYHERE_CANCEL_URL:http://localhost:8086/api/payments/payhere/cancel}
-  notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8086/api/payments/payhere/notify}
-  sandbox: true
+  # Merchant ID is account-level and must come from environment for your own sandbox/live account.
+  merchant-id: ${PAYHERE_MERCHANT_ID:1235071}
+  # Merchant Secret is domain/app-specific. Use the secret generated for the exact integrating domain/app.
+  merchant-secret: ${PAYHERE_MERCHANT_SECRET:MTcwNzU3MTk0MTM3NzkwNzczMTgzMzU3ODc3NTEyMjA0NTA0Mzk=}
+  checkout-url: ${PAYHERE_CHECKOUT_URL:https://sandbox.payhere.lk/pay/checkout}
+  # Keep all callback URLs on one public host in sandbox (for example your current ngrok URL).
+  public-base-url: ${PAYHERE_PUBLIC_BASE_URL:https://climate-monthly-ipod.ngrok-free.dev}
+  return-url: ${payhere.public-base-url}/api/payments/payhere/return
+  cancel-url: ${payhere.public-base-url}/api/payments/payhere/cancel
+  notify-url: ${payhere.public-base-url}/api/payments/payhere/notify
+  sandbox: ${PAYHERE_SANDBOX:true}
 
 services:
   appointment:
