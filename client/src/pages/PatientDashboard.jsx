@@ -6,14 +6,16 @@ import {
   Stethoscope,
   Clock,
   CreditCard,
-  LogOut
+  LogOut,
+  Users,
+  FileText,
+  Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appointmentService from '../services/appointmentService';
 import AppointmentCard from '../components/AppointmentCard';
 import BookAppointmentModal from '../components/BookAppointmentModal';
 import ConfirmDialog from '../components/ConfirmDialog';
-import PatientSidebar from '../components/PatientSidebar';
 
 export default function PatientDashboard() {
   const navigate = useNavigate();
@@ -81,7 +83,6 @@ export default function PatientDashboard() {
 
   return (
     <div className="dashboard-layout">
-      <PatientSidebar />
       {/* Sidebar */}
       <aside className="sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -95,8 +96,13 @@ export default function PatientDashboard() {
           <div className="nav-item"><Heart size={20} /> My Health</div>
           <div className="nav-item active"><Calendar size={20} /> Appointments</div>
           <div className="nav-item" onClick={() => navigate('/symptom-checker')}><Stethoscope size={20} /> Symptom Checker</div>
-          <div className="nav-item"><Clock size={20} /> Medical History</div>
           <div className="nav-item"><CreditCard size={20} /> Invoices & Payments</div>
+          <div className="nav-item" onClick={() => navigate('/patient/profile')}><Users size={20} /> My Profile</div>
+          <div className="nav-item" onClick={() => navigate('/patient/sessions')}><Video size={20} /> Telemedicine Sessions</div>
+          <div className="nav-item" onClick={() => navigate('/patient/medical-history')}><Clock size={20} /> Medical History</div>
+          <div className="nav-item" onClick={() => navigate('/patient/prescriptions')}><FileText size={20} /> Prescriptions</div>
+          <div className="nav-item" onClick={() => navigate('/patient/reports')}><FileText size={20} /> Medical Reports</div>
+          <div className="nav-item" onClick={() => navigate('/patient/search-doctors')}><Stethoscope size={20} /> Search Doctors</div>
         </nav>
 
         <div style={{ marginTop: 'auto' }}>

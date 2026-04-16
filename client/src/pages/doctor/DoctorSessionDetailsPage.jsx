@@ -78,7 +78,7 @@ export default function DoctorSessionDetailsPage() {
 
         <nav className="sidebar-nav">
           <div className="nav-item" onClick={() => navigate('/doctor')}><Calendar size={20} /> My Schedule</div>
-          <div className="nav-item"><Users size={20} /> My Patients</div>
+          <div className="nav-item" onClick={() => navigate('/doctor/patients')}><Users size={20} /> My Patients</div>
           <div className="nav-item active" onClick={() => navigate('/doctor/teleconferences')}><Video size={20} /> Teleconferences</div>
           <div className="nav-item"><FileText size={20} /> Prescriptions</div>
           <div className="nav-item"><Clock size={20} /> Consult History</div>

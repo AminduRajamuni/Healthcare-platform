@@ -29,11 +29,19 @@ export default function AdminCreateSessionPage() {
       return;
     }
 
+    const normalizeDateTime = (value) => {
+      if (!value) return value;
+      if (typeof value === 'string' && value.length === 16) {
+        return `${value}:00`;
+      }
+      return value;
+    };
+
     const payload = {
       appointmentId: Number(form.appointmentId),
       doctorId: Number(form.doctorId),
       patientId: Number(form.patientId),
-      scheduledTime: form.scheduledTime,
+      scheduledTime: normalizeDateTime(form.scheduledTime),
     };
 
     setSubmitting(true);
@@ -42,7 +50,8 @@ export default function AdminCreateSessionPage() {
       navigate('/admin/sessions');
     } catch (err) {
       console.error('Failed to create telemedicine session', err);
-      setError('Failed to create session.');
+      const message = err?.response?.data?.message || err?.response?.data || err?.message;
+      setError(message ? `Failed to create session: ${message}` : 'Failed to create session.');
     } finally {
       setSubmitting(false);
     }

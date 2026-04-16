@@ -83,13 +83,13 @@ export default function DoctorDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ background: 'var(--accent-bg)', padding: '8px', borderRadius: '8px' }}>
             <Activity color="#3b82f6" size={24} />
-          </div>9
+          </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white' }}>Doctor Portal</h2>
         </div>
 
         <nav className="sidebar-nav">
           <div className="nav-item active"><Calendar size={20} /> My Schedule</div>
-          <div className="nav-item"><Users size={20} /> My Patients</div>
+          <div className="nav-item" onClick={() => navigate('/doctor/patients')}><Users size={20} /> My Patients</div>
           <div className="nav-item" onClick={() => navigate('/doctor/teleconferences')}><Video size={20} /> Teleconferences</div>
           <div className="nav-item"><FileText size={20} /> Prescriptions</div>
           <div className="nav-item" onClick={() => navigate('/doctor/teleconferences')}> <Clock size={20} /> Consult History</div>
