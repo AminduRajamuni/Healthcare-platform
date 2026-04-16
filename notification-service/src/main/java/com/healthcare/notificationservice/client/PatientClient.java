@@ -17,7 +17,7 @@ public class PatientClient {
         log.info("Fetching email for patient ID: {}", patientId);
         try {
             PatientDto patientDto = restTemplate.getForObject(
-                    "http://localhost:8080/api/patients/" + patientId, 
+                    "http://patient-service:8080/api/patients/" + patientId, 
                     PatientDto.class
             );
             

@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DoctorTelemedicineBridgeServiceImpl implements DoctorTelemedicineBridgeService {
 
-    private static final String TELEMEDICINE_SERVICE_BASE_URL = "http://localhost:8085/api/sessions";
+    private static final String TELEMEDICINE_SERVICE_BASE_URL = "http://telemedicine-service:8085/api/sessions";
 
     private final DoctorRepository doctorRepository;
     private final RestTemplate restTemplate;

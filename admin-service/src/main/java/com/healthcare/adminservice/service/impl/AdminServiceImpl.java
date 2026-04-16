@@ -23,10 +23,10 @@ public class AdminServiceImpl implements AdminService {
     private final RestTemplate restTemplate;
 
     // Hardcoded URLs based on requirements. In a real scenario, use FeignClient or load balancer.
-    private final String doctorServiceUrl = "http://localhost:8081/api/doctors";
-    private final String patientServiceUrl = "http://localhost:8080/api/patients";
-    private final String paymentServiceUrl = "http://localhost:8086/api/payments";
-    private final String appointmentServiceUrl = "http://localhost:8082/api/appointments";
+    private final String doctorServiceUrl = "http://doctor-service:8081/api/doctors";
+    private final String patientServiceUrl = "http://patient-service:8080/api/patients";
+    private final String paymentServiceUrl = "http://payment-service:8086/api/payments";
+    private final String appointmentServiceUrl = "http://appointment-service:8082/api/appointments";
 
     @Override
     public DoctorDto verifyDoctor(Long id) {

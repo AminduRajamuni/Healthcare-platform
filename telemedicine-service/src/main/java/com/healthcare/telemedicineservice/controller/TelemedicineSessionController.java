@@ -28,6 +28,14 @@ public class TelemedicineSessionController {
     return new ResponseEntity<>(dto, HttpStatus.CREATED);
   }
 
+  // GET /api/sessions : List all sessions (admin only)
+  @GetMapping
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<List<TelemedicineSessionDto>> getAllSessions() {
+    List<TelemedicineSessionDto> sessions = sessionService.getAllSessions();
+    return ResponseEntity.ok(sessions);
+  }
+
   // GET /api/sessions/{id} : Get session details
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMIN')")
@@ -52,7 +60,8 @@ public class TelemedicineSessionController {
     return ResponseEntity.ok(sessions);
   }
 
-  // POST /api/sessions/{id}/join : Patient/doctor joins session and receives video link
+  // POST /api/sessions/{id}/join : Patient/doctor joins session and receives
+  // video link
   @PostMapping("/{id}/join")
   @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMIN')")
   public ResponseEntity<TelemedicineSessionDto> joinSession(@PathVariable Long id) {
@@ -72,10 +81,8 @@ public class TelemedicineSessionController {
   @PostMapping("/{id}/notes")
   @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
   public ResponseEntity<TelemedicineSessionDto> addNotes(@PathVariable Long id,
-                       @Valid @RequestBody AddSessionNotesRequest request) {
+      @Valid @RequestBody AddSessionNotesRequest request) {
     TelemedicineSessionDto dto = sessionService.addSessionNotes(id, request);
     return ResponseEntity.ok(dto);
   }
 }
-
-

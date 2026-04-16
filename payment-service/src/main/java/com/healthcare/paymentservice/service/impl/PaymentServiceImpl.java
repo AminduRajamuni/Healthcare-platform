@@ -51,7 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayHereProperties payHereProperties;
     private final ObjectProvider<KafkaTemplate<Object, Object>> kafkaTemplateProvider;
 
-    @Value("${services.appointment.base-url:http://localhost:8082}")
+    @Value("${services.appointment.base-url:http://appointment-service:8082}")
     private String appointmentServiceBaseUrl;
 
     @Value("${events.payment.topic:payment.events}")

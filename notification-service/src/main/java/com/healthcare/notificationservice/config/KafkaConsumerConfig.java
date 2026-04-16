@@ -10,6 +10,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,10 +19,13 @@ import java.util.Map;
 @Configuration
 public class KafkaConsumerConfig {
 
+    @Value("${spring.kafka.consumer.bootstrap-servers}")
+    private String bootstrapServers;
+
     @Bean
     public ConsumerFactory<String, AppointmentEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         
