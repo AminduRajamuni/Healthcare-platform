@@ -28,6 +28,14 @@ public class TelemedicineSessionController {
     return new ResponseEntity<>(dto, HttpStatus.CREATED);
   }
 
+  // GET /api/sessions : List all sessions (admin only)
+  @GetMapping
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<List<TelemedicineSessionDto>> getAllSessions() {
+    List<TelemedicineSessionDto> sessions = sessionService.getAllSessions();
+    return ResponseEntity.ok(sessions);
+  }
+
   // GET /api/sessions/{id} : Get session details
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMIN')")

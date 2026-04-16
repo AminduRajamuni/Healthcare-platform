@@ -121,7 +121,7 @@ export default function AdminDashboard() {
           <div className="nav-item" onClick={() => navigate('/admin/patients')}><Users size={20} /> Manage Patients</div>
           <div className={`nav-item ${activeTab === 'All Appointments' ? 'active' : ''}`} onClick={() => setActiveTab('All Appointments')}><CalendarIcon size={20} /> All Appointments</div>
           <div className="nav-item"><CreditCard size={20} /> Payments</div>
-          <div className="nav-item"><Video size={20} /> Telemedicine Logs</div>
+          <div className="nav-item" onClick={() => navigate('/admin/sessions')}><Video size={20} /> Telemedicine Logs</div>
           <div className="nav-item"><Settings size={20} /> System Settings</div>
         </nav>
 

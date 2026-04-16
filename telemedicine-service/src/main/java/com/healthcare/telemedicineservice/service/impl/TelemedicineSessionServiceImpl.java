@@ -77,6 +77,18 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
   }
 
   @Override
+  public List<TelemedicineSessionDto> getAllSessions() {
+    TelemedicineUserPrincipal currentUser = getCurrentUser();
+    if (currentUser == null || !"ROLE_ADMIN".equals(currentUser.getRole())) {
+      throw new UnauthorizedSessionAccessException("Only admins can access all sessions");
+    }
+
+    return sessionRepository.findAll().stream()
+        .map(this::mapToDto)
+        .toList();
+  }
+
+  @Override
   public List<TelemedicineSessionDto> getSessionsForPatient(Long patientId) {
     TelemedicineUserPrincipal currentUser = getCurrentUser();
     if (currentUser != null && "PATIENT".equalsIgnoreCase(currentUser.getRole())) {
@@ -156,7 +168,7 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
       if (userId == null || !session.getDoctorId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("Doctor is not assigned to this session");
       }
-    } else if (!"ADMIN".equalsIgnoreCase(role)) {
+    } else if (!"ROLE_ADMIN".equals(role)) {
       throw new UnauthorizedSessionAccessException("Only the assigned doctor or an admin can end the session");
     }
 
@@ -187,7 +199,7 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
       if (userId == null || !session.getDoctorId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("Doctor is not assigned to this session");
       }
-    } else if (!"ADMIN".equalsIgnoreCase(role)) {
+    } else if (!"ROLE_ADMIN".equals(role)) {
       throw new UnauthorizedSessionAccessException("Only the assigned doctor or an admin can add notes");
     }
 
@@ -207,9 +219,32 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
 
   private TelemedicineUserPrincipal getCurrentUser() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication != null && authentication.getPrincipal() instanceof TelemedicineUserPrincipal principal) {
+    if (authentication == null)
+      return null;
+
+    // Case 1: Direct JWT auth (TelemedicineUserPrincipal)
+    if (authentication.getPrincipal() instanceof TelemedicineUserPrincipal principal) {
       return principal;
     }
+
+    // Case 2: Gateway header auth (principal is String userId)
+    if (authentication.getPrincipal() instanceof String userId) {
+      String role = authentication.getAuthorities().stream()
+          .map(a -> a.getAuthority())
+          .filter(a -> a.startsWith("ROLE_"))
+          .findFirst()
+          .orElse(null);
+
+      Long id = null;
+      try {
+        id = Long.parseLong(userId);
+      } catch (NumberFormatException ignored) {
+      }
+
+      return new TelemedicineUserPrincipal(id, userId, role,
+          List.copyOf(authentication.getAuthorities()));
+    }
+
     return null;
   }
 

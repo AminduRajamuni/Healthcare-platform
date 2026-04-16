@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
+import { 
+  Calendar,
+  Activity,
+  Heart,
+  Stethoscope,
+  Clock,
+  CreditCard,
+  LogOut
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appointmentService from '../services/appointmentService';
 import AppointmentCard from '../components/AppointmentCard';

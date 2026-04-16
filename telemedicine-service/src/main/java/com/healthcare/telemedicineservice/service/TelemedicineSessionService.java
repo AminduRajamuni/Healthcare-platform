@@ -14,6 +14,8 @@ public interface TelemedicineSessionService {
 
   TelemedicineSessionDto getSessionByAppointmentId(Long appointmentId);
 
+  List<TelemedicineSessionDto> getAllSessions();
+
   List<TelemedicineSessionDto> getSessionsForPatient(Long patientId);
 
   List<TelemedicineSessionDto> getSessionsForDoctor(Long doctorId);
