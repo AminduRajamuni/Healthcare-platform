@@ -5,7 +5,8 @@ const API_URL = '/api/sessions';
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   const userId = localStorage.getItem('userId');
-  const role = localStorage.getItem('role');
+  const rawRole = localStorage.getItem('role');
+  const role = rawRole ? rawRole.toUpperCase().replace(/^ROLE_/, '') : null;
   return {
     headers: {
       'Content-Type': 'application/json',

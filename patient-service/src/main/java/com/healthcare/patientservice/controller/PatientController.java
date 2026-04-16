@@ -32,6 +32,14 @@ public class PatientController {
     return new ResponseEntity<>(patient, HttpStatus.OK);
   }
 
+  // Get patients for a doctor (doctor only)
+  @GetMapping("/doctor/{doctorId}/summary")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR') and #doctorId.toString().equals(authentication.principal)")
+  public ResponseEntity<List<DoctorPatientSummaryDto>> getPatientsForDoctor(@PathVariable Long doctorId) {
+    List<DoctorPatientSummaryDto> patients = patientService.getPatientsForDoctor(doctorId);
+    return new ResponseEntity<>(patients, HttpStatus.OK);
+  }
+
   // Get All Patients (admin only)
   @GetMapping
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
@@ -60,7 +68,7 @@ public class PatientController {
   @PutMapping("/{id}")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<PatientProfileDto> updatePatient(@PathVariable("id") Long patientId,
-                             @Valid @RequestBody UpdatePatientRequest request) {
+      @Valid @RequestBody UpdatePatientRequest request) {
     PatientProfileDto updatedPatient = patientService.updatePatient(patientId, request);
     return new ResponseEntity<>(updatedPatient, HttpStatus.OK);
   }
@@ -75,7 +83,8 @@ public class PatientController {
 
   // Search doctors (all authenticated roles)
   @GetMapping("/doctors/search")
-  public ResponseEntity<List<DoctorDto>> searchDoctors(@RequestParam(value = "specialty", required = false) String specialty) {
+  public ResponseEntity<List<DoctorDto>> searchDoctors(
+      @RequestParam(value = "specialty", required = false) String specialty) {
     List<DoctorDto> doctors = patientService.searchDoctors(specialty);
     return new ResponseEntity<>(doctors, HttpStatus.OK);
   }
@@ -92,7 +101,7 @@ public class PatientController {
   @PostMapping("/{id}/medical-history")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")
   public ResponseEntity<MedicalHistoryDto> addMedicalHistory(@PathVariable("id") Long patientId,
-                              @Valid @RequestBody CreateMedicalHistoryRequest request) {
+      @Valid @RequestBody CreateMedicalHistoryRequest request) {
     MedicalHistoryDto dto = patientService.addMedicalHistory(patientId, request);
     return new ResponseEntity<>(dto, HttpStatus.CREATED);
   }
@@ -109,7 +118,7 @@ public class PatientController {
   @PostMapping("/{id}/prescriptions")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('DOCTOR') or hasRole('ADMIN')")
   public ResponseEntity<PrescriptionDto> addPrescription(@PathVariable("id") Long patientId,
-                              @Valid @RequestBody CreatePrescriptionRequest request) {
+      @Valid @RequestBody CreatePrescriptionRequest request) {
     PrescriptionDto dto = patientService.addPrescription(patientId, request);
     return new ResponseEntity<>(dto, HttpStatus.CREATED);
   }
@@ -126,8 +135,8 @@ public class PatientController {
   @PostMapping(value = "/{id}/reports", consumes = "multipart/form-data")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') and #patientId.toString().equals(authentication.principal)")
   public ResponseEntity<MedicalReportDto> uploadMedicalReport(@PathVariable("id") Long patientId,
-                                @RequestPart("file") org.springframework.web.multipart.MultipartFile file,
-                                @RequestPart(value = "description", required = false) String description) {
+      @RequestPart("file") org.springframework.web.multipart.MultipartFile file,
+      @RequestPart(value = "description", required = false) String description) {
 
     if (file == null || file.isEmpty()) {
       throw new IllegalArgumentException("File must not be empty");
@@ -141,9 +150,9 @@ public class PatientController {
     String contentType = file.getContentType();
     if (contentType == null ||
         !(contentType.equalsIgnoreCase("application/pdf") ||
-          contentType.startsWith("image/") ||
-          contentType.equalsIgnoreCase("application/msword") ||
-          contentType.equalsIgnoreCase("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))) {
+            contentType.startsWith("image/") ||
+            contentType.equalsIgnoreCase("application/msword") ||
+            contentType.equalsIgnoreCase("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))) {
       throw new IllegalArgumentException("Unsupported file type");
     }
 
@@ -155,7 +164,7 @@ public class PatientController {
   @DeleteMapping("/{id}/reports/{reportId}")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<Void> deleteMedicalReport(@PathVariable("id") Long patientId,
-                          @PathVariable("reportId") Long reportId) {
+      @PathVariable("reportId") Long reportId) {
     patientService.deleteMedicalReport(patientId, reportId);
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
@@ -164,7 +173,7 @@ public class PatientController {
   @PostMapping("/{id}/appointments")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<AppointmentDto> bookAppointment(@PathVariable("id") Long patientId,
-                             @Valid @RequestBody BookAppointmentRequest request) {
+      @Valid @RequestBody BookAppointmentRequest request) {
     AppointmentDto dto = patientService.bookAppointment(patientId, request);
     return new ResponseEntity<>(dto, HttpStatus.CREATED);
   }
@@ -181,7 +190,7 @@ public class PatientController {
   @GetMapping("/{id}/appointments/{appointmentId}/video-link")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
   public ResponseEntity<TelemedicineSessionDto> getVideoLink(@PathVariable("id") Long patientId,
-                                   @PathVariable Long appointmentId) {
+      @PathVariable Long appointmentId) {
     TelemedicineSessionDto session = patientService.getVideoLink(patientId, appointmentId);
     return new ResponseEntity<>(session, HttpStatus.OK);
   }

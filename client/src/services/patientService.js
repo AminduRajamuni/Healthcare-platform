@@ -4,10 +4,15 @@ const API_URL = '/api/patients'; // Uses Vite proxy
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const rawRole = localStorage.getItem('role');
+    const role = rawRole ? rawRole.toUpperCase().replace(/^ROLE_/, '') : null;
     return {
         headers: {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+            ...(userId && { 'X-User-Id': userId }),
+            ...(role && { 'X-User-Role': role })
         }
     };
 };
@@ -116,6 +121,15 @@ const patientService = {
             return response.data;
         } catch (error) {
             console.error('Error searching doctors', error);
+            throw error;
+        }
+    },
+    getPatientsByDoctor: async (doctorId) => {
+        try {
+            const response = await axios.get(`${API_URL}/doctor/${doctorId}/summary`, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching patients for doctor ${doctorId}`, error);
             throw error;
         }
     }

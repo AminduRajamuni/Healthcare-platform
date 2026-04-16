@@ -79,7 +79,7 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
   @Override
   public List<TelemedicineSessionDto> getAllSessions() {
     TelemedicineUserPrincipal currentUser = getCurrentUser();
-    if (currentUser == null || !"ROLE_ADMIN".equals(currentUser.getRole())) {
+    if (currentUser == null || !isAdmin(currentUser.getRole())) {
       throw new UnauthorizedSessionAccessException("Only admins can access all sessions");
     }
 
@@ -91,7 +91,7 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
   @Override
   public List<TelemedicineSessionDto> getSessionsForPatient(Long patientId) {
     TelemedicineUserPrincipal currentUser = getCurrentUser();
-    if (currentUser != null && "PATIENT".equalsIgnoreCase(currentUser.getRole())) {
+    if (currentUser != null && "PATIENT".equals(normalizeRole(currentUser.getRole()))) {
       if (currentUser.getId() == null || !currentUser.getId().equals(patientId)) {
         throw new UnauthorizedSessionAccessException("You are not allowed to access sessions of another patient");
       }
@@ -104,7 +104,7 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
   @Override
   public List<TelemedicineSessionDto> getSessionsForDoctor(Long doctorId) {
     TelemedicineUserPrincipal currentUser = getCurrentUser();
-    if (currentUser != null && "DOCTOR".equalsIgnoreCase(currentUser.getRole())) {
+    if (currentUser != null && "DOCTOR".equals(normalizeRole(currentUser.getRole()))) {
       if (currentUser.getId() == null || !currentUser.getId().equals(doctorId)) {
         throw new UnauthorizedSessionAccessException("You are not allowed to access sessions of another doctor");
       }
@@ -124,14 +124,14 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
       throw new UnauthorizedSessionAccessException("Authentication required to join session");
     }
 
-    String role = currentUser.getRole();
+    String role = normalizeRole(currentUser.getRole());
     Long userId = currentUser.getId();
 
-    if ("PATIENT".equalsIgnoreCase(role)) {
+    if ("PATIENT".equals(role)) {
       if (userId == null || !session.getPatientId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("Patient is not assigned to this session");
       }
-    } else if ("DOCTOR".equalsIgnoreCase(role)) {
+    } else if ("DOCTOR".equals(role)) {
       if (userId == null || !session.getDoctorId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("Doctor is not assigned to this session");
       }
@@ -161,14 +161,14 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
     if (currentUser == null) {
       throw new UnauthorizedSessionAccessException("Authentication required to end session");
     }
-    String role = currentUser.getRole();
+    String role = normalizeRole(currentUser.getRole());
     Long userId = currentUser.getId();
 
-    if ("DOCTOR".equalsIgnoreCase(role)) {
+    if ("DOCTOR".equals(role)) {
       if (userId == null || !session.getDoctorId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("Doctor is not assigned to this session");
       }
-    } else if (!"ROLE_ADMIN".equals(role)) {
+    } else if (!"ADMIN".equals(role)) {
       throw new UnauthorizedSessionAccessException("Only the assigned doctor or an admin can end the session");
     }
 
@@ -192,14 +192,14 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
       throw new UnauthorizedSessionAccessException("Authentication required to add notes");
     }
 
-    String role = currentUser.getRole();
+    String role = normalizeRole(currentUser.getRole());
     Long userId = currentUser.getId();
 
-    if ("DOCTOR".equalsIgnoreCase(role)) {
+    if ("DOCTOR".equals(role)) {
       if (userId == null || !session.getDoctorId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("Doctor is not assigned to this session");
       }
-    } else if (!"ROLE_ADMIN".equals(role)) {
+    } else if (!"ADMIN".equals(role)) {
       throw new UnauthorizedSessionAccessException("Only the assigned doctor or an admin can add notes");
     }
 
@@ -254,19 +254,34 @@ public class TelemedicineSessionServiceImpl implements TelemedicineSessionServic
       throw new UnauthorizedSessionAccessException("Authentication required to access session");
     }
 
-    String role = currentUser.getRole();
+    String role = normalizeRole(currentUser.getRole());
     Long userId = currentUser.getId();
 
-    if ("PATIENT".equalsIgnoreCase(role)) {
+    if ("PATIENT".equals(role)) {
       if (userId == null || !session.getPatientId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("You are not allowed to access this session");
       }
-    } else if ("DOCTOR".equalsIgnoreCase(role)) {
+    } else if ("DOCTOR".equals(role)) {
       if (userId == null || !session.getDoctorId().equals(userId)) {
         throw new UnauthorizedSessionAccessException("You are not allowed to access this session");
       }
     }
     // ADMIN can access any session
+  }
+
+  private boolean isAdmin(String role) {
+    return "ADMIN".equals(normalizeRole(role));
+  }
+
+  private String normalizeRole(String role) {
+    if (role == null) {
+      return null;
+    }
+    String normalized = role.toUpperCase();
+    if (normalized.startsWith("ROLE_")) {
+      normalized = normalized.substring("ROLE_".length());
+    }
+    return normalized;
   }
 
   private TelemedicineSessionDto mapToDto(TelemedicineSession session) {

@@ -6,6 +6,8 @@ import PatientDashboard from './pages/PatientDashboard';
 import DoctorTeleconferencesPage from './pages/doctor/DoctorTeleconferencesPage';
 import DoctorSessionDetailsPage from './pages/doctor/DoctorSessionDetailsPage';
 import DoctorActiveConsultationPage from './pages/doctor/DoctorActiveConsultationPage';
+import DoctorPatientsPage from './pages/doctor/DoctorPatientsPage';
+import DoctorPatientDetailsPage from './pages/doctor/DoctorPatientDetailsPage';
 import PatientLoginPage from './pages/PatientLoginPage';
 import PatientRegisterPage from './pages/PatientRegisterPage';
 import PatientRegistration from './pages/PatientRegistration';
@@ -63,6 +65,16 @@ function App() {
           <Route path="/doctor/teleconferences/session/:id/active" element={
             <ProtectedRoute allowedRoles={['DOCTOR']}>
               <DoctorActiveConsultationPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/doctor/patients" element={
+            <ProtectedRoute allowedRoles={['DOCTOR']}>
+              <DoctorPatientsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/doctor/patients/:patientId" element={
+            <ProtectedRoute allowedRoles={['DOCTOR']}>
+              <DoctorPatientDetailsPage />
             </ProtectedRoute>
           } />
           <Route path="/patient/sessions" element={
