@@ -129,7 +129,7 @@ public class PaymentController {
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN') or hasRole('DOCTOR')")
     public ResponseEntity<Payment> getPaymentByAppointmentId(@PathVariable Long appointmentId) {
         return ResponseEntity.ok(paymentService.getPaymentByAppointmentId(appointmentId));
     }

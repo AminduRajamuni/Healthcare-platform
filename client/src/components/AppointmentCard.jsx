@@ -77,6 +77,12 @@ const AppointmentCard = ({
 
   const getStatusTheme = (status) => {
     switch (status) {
+      case "ACCEPTED":
+        return {
+          color: "#3b82f6",
+          bg: "rgba(59, 130, 246, 0.1)",
+          icon: <CheckCircle size={16} />,
+        };
       case "BOOKED":
       case "PENDING":
         return {
@@ -90,6 +96,7 @@ const AppointmentCard = ({
           bg: "rgba(16, 185, 129, 0.1)",
           icon: <CheckCircle size={16} />,
         };
+      case "REJECTED":
       case "CANCELLED":
         return {
           color: "#ef4444",

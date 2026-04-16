@@ -38,7 +38,7 @@ export default function DoctorDashboard() {
     endTime: "",
   });
   const [slotDate, setSlotDate] = useState("");
-  const [availableSlots, setAvailableSlots] = useState([]);
+  const [searchedAppointments, setSearchedAppointments] = useState([]);
 
   const [prescriptionForm, setPrescriptionForm] = useState({
     patientId: "",
@@ -289,20 +289,23 @@ export default function DoctorDashboard() {
     }
   };
 
-  const handleLoadAvailableSlots = async () => {
+  const handleSearchAppointments = () => {
     if (!doctorProfile?.id || !slotDate) return;
     setSectionError("");
     setSectionMessage("");
     try {
-      const slots = await doctorService.getAvailableDoctorSlots(
-        doctorProfile.id,
-        slotDate,
-      );
-      setAvailableSlots(slots || []);
+      const appsOnDate = appointments.filter((a) => {
+        const appDateStr =
+          typeof a.appointmentDate === "string"
+            ? a.appointmentDate.split("T")[0]
+            : Array.isArray(a.appointmentDate)
+              ? `${a.appointmentDate[0]}-${String(a.appointmentDate[1]).padStart(2, "0")}-${String(a.appointmentDate[2]).padStart(2, "0")}`
+              : null;
+        return appDateStr === slotDate;
+      });
+      setSearchedAppointments(appsOnDate);
     } catch (err) {
-      setSectionError(
-        err?.response?.data?.message || "Failed to load available slots.",
-      );
+      setSectionError("Failed to filter appointments.");
     }
   };
 
@@ -390,7 +393,11 @@ export default function DoctorDashboard() {
   };
 
   const activeAppointments = appointments.filter(
-    (a) => a.status === "BOOKED" || a.status === "PENDING",
+    (a) =>
+      a.status === "BOOKED" ||
+      a.status === "PENDING" ||
+      a.status === "ACCEPTED" ||
+      a.status === "REJECTED",
   );
   const consultationHistory = appointments.filter((a) => {
     if (historyFilter === "ALL") {
@@ -404,6 +411,7 @@ export default function DoctorDashboard() {
   });
 
   const todayAppointments = activeAppointments.filter((a) => {
+    if (a.status === "REJECTED") return false;
     const appDateStr =
       typeof a.appointmentDate === "string"
         ? a.appointmentDate.split("T")[0]
@@ -603,7 +611,8 @@ export default function DoctorDashboard() {
                       }}
                     >
                       <AppointmentCard appointment={app} role="DOCTOR" />
-                      {app.status === "PENDING" && (
+                      {(app.status === "PENDING" ||
+                        app.status === "BOOKED") && (
                         <div style={{ display: "flex", gap: "10px" }}>
                           <button
                             className="btn-primary"
@@ -793,7 +802,7 @@ export default function DoctorDashboard() {
                   className="text-h3"
                   style={{ marginBottom: "12px", fontSize: "1.2rem" }}
                 >
-                  Available Slots Preview
+                  Search Appointments by Date
                 </h3>
                 <div
                   style={{ display: "flex", gap: "10px", marginBottom: "10px" }}
@@ -806,38 +815,72 @@ export default function DoctorDashboard() {
                   />
                   <button
                     className="btn-outline"
-                    onClick={handleLoadAvailableSlots}
+                    onClick={handleSearchAppointments}
                   >
                     Load
                   </button>
                 </div>
                 <div
                   style={{
-                    maxHeight: "120px",
+                    maxHeight: "200px",
                     overflowY: "auto",
                     display: "grid",
-                    gap: "6px",
+                    gap: "10px",
                   }}
                 >
-                  {availableSlots.map((slot) => (
+                  {searchedAppointments.map((app) => {
+                    const timeStr =
+                      typeof app.appointmentDate === "string"
+                        ? new Date(app.appointmentDate).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : Array.isArray(app.appointmentDate)
+                          ? `${String(app.appointmentDate[3]).padStart(2, "0")}:${String(app.appointmentDate[4]).padStart(2, "0")}`
+                          : "";
+
+                    const patient = doctorPatients.find(
+                      (p) => p.id === app.patientId,
+                    );
+                    const patientName = patient
+                      ? `${patient.firstName} ${patient.lastName}`
+                      : `Patient #${app.patientId}`;
+
+                    return (
+                      <div
+                        key={app.id}
+                        className="glass-panel"
+                        style={{
+                          padding: "10px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <p style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                            {patientName}
+                          </p>
+                          <span
+                            style={{
+                              color: "var(--text-secondary)",
+                              fontSize: "0.8rem",
+                            }}
+                          >
+                            {timeStr} • Status: {app.status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {searchedAppointments.length === 0 && (
                     <span
-                      key={slot.id}
                       style={{
                         color: "var(--text-secondary)",
                         fontSize: "0.85rem",
                       }}
                     >
-                      {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                    </span>
-                  ))}
-                  {availableSlots.length === 0 && (
-                    <span
-                      style={{
-                        color: "var(--text-secondary)",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      No available slots loaded.
+                      No appointments found for this date.
                     </span>
                   )}
                 </div>
