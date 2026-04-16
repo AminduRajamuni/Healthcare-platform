@@ -17,23 +17,30 @@ import java.util.Collections;
 public class HeaderRoleAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        
-        String userId = request.getHeader("X-User-Id");
-        String role = request.getHeader("X-User-Role");
+protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        throws ServletException, IOException {
 
-        if (userId != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            String springRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-            
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(springRole);
-            
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    userId, null, Collections.singletonList(authority));
-                    
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        }
-        
-        filterChain.doFilter(request, response);
+    String userId = request.getHeader("X-User-Id");
+    String role = request.getHeader("X-User-Role");
+
+    // 👇 Add these debug lines
+    System.out.println("DEBUG >>> X-User-Id: " + userId);
+    System.out.println("DEBUG >>> X-User-Role: " + role);
+    System.out.println("DEBUG >>> Request URI: " + request.getRequestURI());
+    System.out.println("DEBUG >>> Auth before: " + SecurityContextHolder.getContext().getAuthentication());
+
+    if (userId != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        String springRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(springRole);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                userId, null, Collections.singletonList(authority));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        System.out.println("DEBUG >>> Auth SET as: " + springRole); // 👈
+    } else {
+        System.out.println("DEBUG >>> Auth NOT set — userId=" + userId + " role=" + role); // 👈
     }
+
+    filterChain.doFilter(request, response);
+}
 }
