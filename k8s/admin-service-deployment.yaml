@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: admin-service
-        image: admin-service:latest
+        image: healthcare-platform-admin-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8088

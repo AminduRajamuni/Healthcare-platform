@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: doctor-service
-        image: doctor-service:latest
+        image: healthcare-platform-doctor-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081

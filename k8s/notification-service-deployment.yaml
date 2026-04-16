@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: notification-service:latest
+        image: healthcare-platform-notification-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
