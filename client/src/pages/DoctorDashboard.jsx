@@ -7,6 +7,11 @@ import {
   Activity,
   Clock,
   LogOut,
+  User,
+  Mail,
+  Phone,
+  CheckCircle,
+  Shield,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import appointmentService from "../services/appointmentService";
@@ -46,7 +51,11 @@ export default function DoctorDashboard() {
     description: "",
   });
   const [telemedicineSessions, setTelemedicineSessions] = useState([]);
-  const [historyFilter, setHistoryFilter] = useState("ALL");
+  const [historyTab, setHistoryTab] = useState("appointments");
+  const [doctorPrescriptions, setDoctorPrescriptions] = useState([]);
+  const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
+  const [profileForm, setProfileForm] = useState({ email: "", phone: "" });
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const getDateFromValue = (value) => {
     if (Array.isArray(value)) {
@@ -200,6 +209,12 @@ export default function DoctorDashboard() {
         setDoctorProfile(docsData);
         setAppointments(sortedAppointments);
         await buildPatientCollection(sortedAppointments);
+        if (docsData) {
+          setProfileForm({
+            email: docsData.email || "",
+            phone: docsData.phone || "",
+          });
+        }
       } catch (err) {
         console.error("Failed to fetch doctor dashboard data", err);
       } finally {
@@ -222,6 +237,9 @@ export default function DoctorDashboard() {
           await refreshSchedules(doctorProfile.id);
         }
         if (activeSection === "teleconferences") {
+          await refreshTelemedicineSessions(doctorProfile.id);
+        }
+        if (activeSection === "history") {
           await refreshTelemedicineSessions(doctorProfile.id);
         }
       } catch (err) {
@@ -392,6 +410,34 @@ export default function DoctorDashboard() {
     }
   };
 
+  const handleSaveProfile = async (field) => {
+    if (!doctorProfile?.id) return;
+    setSectionError("");
+    setSectionMessage("");
+    setProfileSaving(true);
+    try {
+      const payload = {
+        name: doctorProfile.name,
+        specialization: doctorProfile.specialization,
+        email: field === "email" ? profileForm.email : doctorProfile.email,
+        phone: field === "phone" ? profileForm.phone : doctorProfile.phone,
+        availability: doctorProfile.availability,
+        isAvailable: doctorProfile.isAvailable,
+        isVerified: doctorProfile.isVerified,
+      };
+      const updated = await doctorService.updateDoctor(doctorProfile.id, payload);
+      setDoctorProfile(updated);
+      setProfileForm({ email: updated.email, phone: updated.phone });
+      setSectionMessage(
+        field === "email" ? "Email updated successfully." : "Phone number updated successfully."
+      );
+    } catch (err) {
+      setSectionError(err?.response?.data?.message || "Failed to update profile.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   const activeAppointments = appointments.filter(
     (a) =>
       a.status === "BOOKED" ||
@@ -399,16 +445,9 @@ export default function DoctorDashboard() {
       a.status === "ACCEPTED" ||
       a.status === "REJECTED",
   );
-  const consultationHistory = appointments.filter((a) => {
-    if (historyFilter === "ALL") {
-      return (
-        a.status === "COMPLETED" ||
-        a.status === "CANCELLED" ||
-        a.status === "REJECTED"
-      );
-    }
-    return a.status === historyFilter;
-  });
+  const historyAppointments = appointments.filter(
+    (a) => a.status === "ACCEPTED" || a.status === "REJECTED",
+  );
 
   const todayAppointments = activeAppointments.filter((a) => {
     if (a.status === "REJECTED") return false;
@@ -431,7 +470,9 @@ export default function DoctorDashboard() {
           ? "Teleconferences"
           : activeSection === "prescriptions"
             ? "Prescriptions"
-            : "Consultation History";
+            : activeSection === "profile"
+              ? "My Profile"
+              : "Consultation History";
 
   const headerSubtitle =
     activeSection === "schedule"
@@ -442,7 +483,9 @@ export default function DoctorDashboard() {
           ? "Join or end your telemedicine sessions."
           : activeSection === "prescriptions"
             ? "Issue prescriptions for patients under your care."
-            : "Review completed, rejected, and cancelled consultations.";
+            : activeSection === "profile"
+              ? "View and update your contact information."
+              : "Review completed, rejected, and cancelled consultations.";
 
   return (
     <div className="dashboard-layout">
@@ -492,6 +535,12 @@ export default function DoctorDashboard() {
             onClick={() => setActiveSection("history")}
           >
             <Clock size={20} /> Consult History
+          </div>
+          <div
+            className={`nav-item ${activeSection === "profile" ? "active" : ""}`}
+            onClick={() => setActiveSection("profile")}
+          >
+            <User size={20} /> My Profile
           </div>
         </nav>
 
@@ -1283,62 +1332,656 @@ export default function DoctorDashboard() {
         )}
 
         {!sectionLoading && activeSection === "history" && (
-          <section style={{ display: "grid", gap: "14px" }}>
+          <section style={{ display: "grid", gap: "20px" }}>
+            {/* Sub-tab bar */}
             <div
               style={{
                 display: "flex",
-                gap: "10px",
+                gap: "4px",
                 borderBottom: "1px solid var(--glass-border)",
-                paddingBottom: "10px",
-                flexWrap: "wrap",
+                paddingBottom: "0",
               }}
             >
-              {["ALL", "COMPLETED", "CANCELLED", "REJECTED"].map((status) => (
+              {[
+                { key: "appointments", label: "Appointments" },
+                { key: "telemedicine", label: "Telemedicine" },
+                { key: "prescriptions", label: "Prescriptions" },
+              ].map((tab) => (
                 <button
-                  key={status}
-                  className="btn-outline"
+                  key={tab.key}
+                  onClick={() => {
+                    setHistoryTab(tab.key);
+                    if (tab.key === "prescriptions" && doctorPrescriptions.length === 0) {
+                      setPrescriptionsLoading(true);
+                      Promise.all(
+                        doctorPatients.map((p) =>
+                          doctorService.getPrescriptionsForPatient(doctorProfile?.id, p.id)
+                        )
+                      )
+                        .then((results) => {
+                          setDoctorPrescriptions(results.flat());
+                        })
+                        .finally(() => setPrescriptionsLoading(false));
+                    }
+                  }}
                   style={{
-                    borderColor:
-                      historyFilter === status
-                        ? "var(--gradient-1)"
-                        : "var(--glass-border)",
+                    padding: "10px 20px",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom:
+                      historyTab === tab.key
+                        ? "2px solid #3b82f6"
+                        : "2px solid transparent",
                     color:
-                      historyFilter === status
+                      historyTab === tab.key
                         ? "var(--text-primary)"
                         : "var(--text-secondary)",
+                    fontWeight: historyTab === tab.key ? 600 : 400,
+                    cursor: "pointer",
+                    fontSize: "0.95rem",
+                    transition: "all 0.2s ease",
+                    marginBottom: "-1px",
                   }}
-                  onClick={() => setHistoryFilter(status)}
                 >
-                  {status}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {consultationHistory.length > 0 ? (
+            {/* ── Appointments Tab ── */}
+            {historyTab === "appointments" && (
               <div style={{ display: "grid", gap: "12px" }}>
-                {consultationHistory.map((appt) => (
-                  <AppointmentCard
-                    key={appt.id}
-                    appointment={appt}
-                    role="DOCTOR"
-                  />
-                ))}
+                {historyAppointments.length > 0 ? (
+                  historyAppointments.map((appt) => {
+                    const isAccepted = appt.status === "ACCEPTED";
+                    const patient = doctorPatients.find(
+                      (p) => p.id === appt.patientId,
+                    );
+                    const patientName = patient
+                      ? `${patient.firstName} ${patient.lastName}`
+                      : `Patient #${appt.patientId}`;
+                    return (
+                      <div
+                        key={appt.id}
+                        className="glass-panel"
+                        style={{
+                          padding: "18px 22px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "16px",
+                          borderLeft: `3px solid ${
+                            isAccepted ? "#10b981" : "#ef4444"
+                          }`,
+                        }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontWeight: 600, fontSize: "1rem" }}>
+                            {patientName}
+                          </span>
+                          <span
+                            style={{
+                              color: "var(--text-secondary)",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            {formatDate(appt.appointmentDate)}
+                            {appt.startTime ? ` • ${formatTime(appt.startTime)}` : ""}
+                          </span>
+                          {appt.reason && (
+                            <span
+                              style={{
+                                color: "var(--text-secondary)",
+                                fontSize: "0.82rem",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              {appt.reason}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            padding: "5px 14px",
+                            borderRadius: "999px",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            background: isAccepted
+                              ? "rgba(16,185,129,0.15)"
+                              : "rgba(239,68,68,0.15)",
+                            color: isAccepted ? "#10b981" : "#ef4444",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {appt.status}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    className="glass-panel"
+                    style={{
+                      padding: "32px",
+                      color: "var(--text-secondary)",
+                      textAlign: "center",
+                    }}
+                  >
+                    No accepted or rejected appointments yet.
+                  </div>
+                )}
               </div>
-            ) : (
-              <div
-                className="glass-panel"
-                style={{
-                  padding: "22px",
-                  color: "var(--text-secondary)",
-                  textAlign: "center",
-                }}
-              >
-                No consultation history records for selected filter.
+            )}
+
+            {/* ── Telemedicine Tab ── */}
+            {historyTab === "telemedicine" && (
+              <div style={{ display: "grid", gap: "14px" }}>
+                {telemedicineSessions.length > 0 ? (
+                  telemedicineSessions.map((session, index) => {
+                    const sessionId =
+                      session.sessionId || session.id || session.session_id;
+                    const status = session.status || session.state || "UNKNOWN";
+                    const patientId =
+                      session.patientId || session.patient_id;
+                    const patient = doctorPatients.find(
+                      (p) => p.id === patientId,
+                    );
+                    const patientName = patient
+                      ? `${patient.firstName} ${patient.lastName}`
+                      : patientId
+                      ? `Patient #${patientId}`
+                      : null;
+                    const isActive =
+                      status === "ACTIVE" || status === "IN_PROGRESS";
+                    return (
+                      <div
+                        key={`${sessionId || "session"}-${index}`}
+                        className="glass-panel"
+                        style={{
+                          padding: "20px 22px",
+                          borderLeft: `3px solid ${
+                            isActive ? "#3b82f6" : "rgba(255,255,255,0.15)"
+                          }`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "12px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <h4 style={{ fontSize: "1rem", margin: 0 }}>
+                              Session #{sessionId || "N/A"}
+                            </h4>
+                            {patientName && (
+                              <span
+                                style={{
+                                  color: "var(--text-secondary)",
+                                  fontSize: "0.85rem",
+                                }}
+                              >
+                                Patient: {patientName}
+                              </span>
+                            )}
+                            {session.createdAt && (
+                              <span
+                                style={{
+                                  color: "var(--text-secondary)",
+                                  fontSize: "0.82rem",
+                                }}
+                              >
+                                {formatDate(session.createdAt)}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            style={{
+                              padding: "5px 14px",
+                              borderRadius: "999px",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              background: isActive
+                                ? "rgba(59,130,246,0.15)"
+                                : "rgba(255,255,255,0.07)",
+                              color: isActive ? "#3b82f6" : "var(--text-secondary)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    className="glass-panel"
+                    style={{
+                      padding: "32px",
+                      color: "var(--text-secondary)",
+                      textAlign: "center",
+                    }}
+                  >
+                    No telemedicine sessions conducted yet.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Prescriptions Tab ── */}
+            {historyTab === "prescriptions" && (
+              <div>
+                {prescriptionsLoading ? (
+                  <div style={{ color: "var(--text-secondary)", padding: "12px" }}>
+                    Loading prescriptions...
+                  </div>
+                ) : doctorPrescriptions.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                      gap: "16px",
+                    }}
+                  >
+                    {doctorPrescriptions.map((rx, idx) => {
+                      const patient = doctorPatients.find(
+                        (p) => p.id === rx.patientId,
+                      );
+                      const patientName = patient
+                        ? `${patient.firstName} ${patient.lastName}`
+                        : `Patient #${rx.patientId}`;
+                      const medicines = Array.isArray(rx.medicines)
+                        ? rx.medicines
+                        : [];
+                      return (
+                        <div
+                          key={rx.id || idx}
+                          className="glass-panel"
+                          style={{
+                            padding: "20px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "12px",
+                            borderTop: "3px solid #8b5cf6",
+                          }}
+                        >
+                          {/* Card header */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <div>
+                              <p
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: "0.95rem",
+                                  marginBottom: "2px",
+                                }}
+                              >
+                                {patientName}
+                              </p>
+                              {rx.issuedAt || rx.createdAt ? (
+                                <p
+                                  style={{
+                                    color: "var(--text-secondary)",
+                                    fontSize: "0.78rem",
+                                  }}
+                                >
+                                  {formatDate(rx.issuedAt || rx.createdAt)}
+                                </p>
+                              ) : null}
+                            </div>
+                            <span
+                              style={{
+                                background: "rgba(139,92,246,0.15)",
+                                color: "#a78bfa",
+                                borderRadius: "999px",
+                                padding: "3px 10px",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Rx #{rx.id || idx + 1}
+                            </span>
+                          </div>
+
+                          {/* Medicines list */}
+                          {medicines.length > 0 && (
+                            <div
+                              style={{
+                                background: "rgba(255,255,255,0.04)",
+                                borderRadius: "8px",
+                                padding: "10px 12px",
+                                display: "grid",
+                                gap: "6px",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  fontSize: "0.78rem",
+                                  color: "var(--text-secondary)",
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em",
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                Medicines
+                              </p>
+                              {medicines.map((med, i) => (
+                                <div
+                                  key={i}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "0.88rem",
+                                  }}
+                                >
+                                  <span>{med.medicine || med.name || med}</span>
+                                  {med.dosage && (
+                                    <span
+                                      style={{ color: "var(--text-secondary)" }}
+                                    >
+                                      {med.dosage}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Description */}
+                          {rx.description && (
+                            <p
+                              style={{
+                                color: "var(--text-secondary)",
+                                fontSize: "0.85rem",
+                                fontStyle: "italic",
+                                borderTop: "1px solid var(--glass-border)",
+                                paddingTop: "8px",
+                                margin: 0,
+                              }}
+                            >
+                              {rx.description}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    className="glass-panel"
+                    style={{
+                      padding: "32px",
+                      color: "var(--text-secondary)",
+                      textAlign: "center",
+                    }}
+                  >
+                    No prescriptions issued yet.
+                  </div>
+                )}
               </div>
             )}
           </section>
         )}
+
+        {!sectionLoading && activeSection === "profile" && (
+          <section
+            style={{
+              display: "grid",
+              gap: "24px",
+              maxWidth: "680px",
+            }}
+          >
+            {/* Avatar + Name card */}
+            <div
+              className="glass-panel"
+              style={{
+                padding: "28px 24px",
+                display: "flex",
+                alignItems: "center",
+                gap: "20px",
+              }}
+            >
+              <div
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <User size={32} color="white" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h2
+                  style={{
+                    fontSize: "1.35rem",
+                    fontWeight: 700,
+                    marginBottom: "4px",
+                  }}
+                >
+                  {doctorProfile?.name || "—"}
+                </h2>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                  {doctorProfile?.specialization || "—"}
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    marginTop: "10px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "3px 12px",
+                      borderRadius: "999px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      background: doctorProfile?.isVerified
+                        ? "rgba(16,185,129,0.15)"
+                        : "rgba(245,158,11,0.15)",
+                      color: doctorProfile?.isVerified ? "#10b981" : "#f59e0b",
+                    }}
+                  >
+                    <Shield size={12} />
+                    {doctorProfile?.isVerified ? "Verified" : "Pending Verification"}
+                  </span>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "3px 12px",
+                      borderRadius: "999px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      background: doctorProfile?.isAvailable
+                        ? "rgba(59,130,246,0.15)"
+                        : "rgba(100,116,139,0.15)",
+                      color: doctorProfile?.isAvailable ? "#3b82f6" : "#94a3b8",
+                    }}
+                  >
+                    <CheckCircle size={12} />
+                    {doctorProfile?.isAvailable ? "Available" : "Unavailable"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Editable fields */}
+            <div className="glass-panel" style={{ padding: "24px" }}>
+              <h3
+                className="text-h3"
+                style={{ marginBottom: "20px", fontSize: "1.05rem" }}
+              >
+                Contact Information
+              </h3>
+
+              {/* Email row */}
+              <div
+                style={{
+                  display: "grid",
+                  gap: "6px",
+                  marginBottom: "20px",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  <Mail size={14} /> Email Address
+                </label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input
+                    type="email"
+                    className="glass-input"
+                    value={profileForm.email}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="btn-primary"
+                    style={{
+                      padding: "0 20px",
+                      background: "linear-gradient(to right, #3b82f6, #8b5cf6)",
+                      whiteSpace: "nowrap",
+                      opacity: profileSaving ? 0.7 : 1,
+                    }}
+                    disabled={
+                      profileSaving ||
+                      profileForm.email === doctorProfile?.email
+                    }
+                    onClick={() => handleSaveProfile("email")}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+
+              {/* Phone row */}
+              <div style={{ display: "grid", gap: "6px" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  <Phone size={14} /> Mobile Number
+                </label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input
+                    type="tel"
+                    className="glass-input"
+                    value={profileForm.phone}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="btn-primary"
+                    style={{
+                      padding: "0 20px",
+                      background: "linear-gradient(to right, #3b82f6, #8b5cf6)",
+                      whiteSpace: "nowrap",
+                      opacity: profileSaving ? 0.7 : 1,
+                    }}
+                    disabled={
+                      profileSaving ||
+                      profileForm.phone === doctorProfile?.phone
+                    }
+                    onClick={() => handleSaveProfile("phone")}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Read-only info */}
+            <div className="glass-panel" style={{ padding: "20px 24px" }}>
+              <h3
+                className="text-h3"
+                style={{ marginBottom: "16px", fontSize: "1.05rem" }}
+              >
+                Account Details
+              </h3>
+              <div style={{ display: "grid", gap: "10px" }}>
+                {[
+                  { label: "Doctor ID", value: doctorProfile?.id },
+                  { label: "Full Name", value: doctorProfile?.name },
+                  {
+                    label: "Specialization",
+                    value: doctorProfile?.specialization,
+                  },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "10px 0",
+                      borderBottom: "1px solid var(--glass-border)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span style={{ fontWeight: 600 }}>{value || "—"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
+
     </div>
   );
 }

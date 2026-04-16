@@ -195,7 +195,20 @@ const doctorService = {
             console.error(`Error ending telemedicine session ${sessionId}`, error);
             throw error;
         }
-    }
+    },
+    getPrescriptionsForPatient: async (doctorId, patientId) => {
+        try {
+            const response = await axios.get(
+                `/api/patients/${patientId}/prescriptions`,
+                getAuthHeaders()
+            );
+            const data = Array.isArray(response.data) ? response.data : [];
+            return data.map(rx => ({ ...rx, patientId }));
+        } catch (error) {
+            console.error(`Error fetching prescriptions for patient ${patientId}`, error);
+            return [];
+        }
+    },
 };
 
 export default doctorService;
