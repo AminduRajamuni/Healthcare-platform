@@ -4,15 +4,24 @@ const API_URL = '/api/sessions';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  const role = localStorage.getItem('role');
   return {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...(userId && { 'X-User-Id': userId }),
+      ...(role && { 'X-User-Role': role }),
     },
   };
 };
 
 const telemedicineService = {
+  getAllSessions: async () => {
+    const response = await axios.get(API_URL, getAuthHeaders());
+    return response.data;
+  },
+
   // Patient-facing
   getSessionsForPatient: async (patientId) => {
     const response = await axios.get(`${API_URL}/patient/${patientId}`, getAuthHeaders());

@@ -19,6 +19,9 @@ import PatientReportsPage from './pages/patient/PatientReportsPage';
 import PatientSearchDoctorsPage from './pages/patient/PatientSearchDoctorsPage';
 import PatientProfilePage from './pages/PatientProfilePage';
 import AdminManagePatientsPage from './pages/admin/AdminManagePatientsPage';
+import AdminSessionsDashboard from './pages/admin/AdminSessionsDashboard';
+import AdminCreateSessionPage from './pages/admin/AdminCreateSessionPage';
+import AdminSessionDetailsPage from './pages/admin/AdminSessionDetailsPage';
 import SymptomChecker from './pages/SymptomChecker';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -32,9 +35,21 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/patient/login" element={<PatientLoginPage />} />
           <Route path="/patient/register" element={<PatientRegisterPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/doctor" element={<DoctorDashboard />} />
-          <Route path="/patient" element={<PatientDashboard />} />
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/doctor" element={
+            <ProtectedRoute allowedRoles={['DOCTOR']}>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/patient" element={
+            <ProtectedRoute allowedRoles={['PATIENT']}>
+              <PatientDashboard />
+            </ProtectedRoute>
+          } />
           <Route path="/doctor/teleconferences" element={
             <ProtectedRoute allowedRoles={['DOCTOR']}>
               <DoctorTeleconferencesPage />
@@ -95,23 +110,23 @@ function App() {
               <AdminManagePatientsPage />
             </ProtectedRoute>
           } />
+          <Route path="/admin/sessions" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminSessionsDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/sessions/create" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminCreateSessionPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/sessions/:id" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminSessionDetailsPage />
+            </ProtectedRoute>
+          } />
           <Route path="/register/patient" element={<PatientRegistration />} />
           <Route path="/register/doctor" element={<DoctorRegistration />} />
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
-                <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/doctor" element={
-            <ProtectedRoute allowedRoles={['DOCTOR']}>
-                <DoctorDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/patient" element={
-            <ProtectedRoute allowedRoles={['PATIENT']}>
-                <PatientDashboard />
-            </ProtectedRoute>
-          } />
           <Route path="/symptom-checker" element={
             <ProtectedRoute allowedRoles={['PATIENT']}>
                 <SymptomChecker />

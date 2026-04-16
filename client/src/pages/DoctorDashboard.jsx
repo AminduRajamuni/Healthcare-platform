@@ -83,7 +83,7 @@ export default function DoctorDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ background: 'var(--accent-bg)', padding: '8px', borderRadius: '8px' }}>
             <Activity color="#3b82f6" size={24} />
-          </div>
+          </div>9
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white' }}>Doctor Portal</h2>
         </div>
 
