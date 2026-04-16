@@ -160,7 +160,20 @@ export default function DoctorRegistration() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Specialization</label>
-            <input type="text" name="specialization" className="glass-input" placeholder="e.g. Cardiology" required onChange={handleChange} />
+            <div className="glass-input-wrapper">
+               <select name="specialization" className="glass-input" required onChange={handleChange} value={formData.specialization}>
+                  <option value="" disabled>Select Specialization</option>
+                  <option value="Cardiology">Cardiology</option>
+                  <option value="Psychiatry">Psychiatry</option>
+                  <option value="General Practitioner">General Practitioner</option>
+                  <option value="Pediatrics">Pediatrics</option>
+                  <option value="Orthopedics">Orthopedics</option>
+                  <option value="Neurology">Neurology</option>
+                  <option value="Dermatology">Dermatology</option>
+                  <option value="Oncology">Oncology</option>
+                  <option value="Gastroenterology">Gastroenterology</option>
+               </select>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

@@ -117,7 +117,7 @@ export default function AdminDashboard() {
 
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeTab === 'Overview' ? 'active' : ''}`} onClick={() => setActiveTab('Overview')}><Activity size={20} /> Overview</div>
-          <div className={`nav-item ${activeTab === 'Users & Roles' ? 'active' : ''}`} onClick={() => setActiveTab('Users & Roles')}><Users size={20} /> Users & Roles</div>
+            <div className={`nav-item ${activeTab === 'Users' ? 'active' : ''}`} onClick={() => setActiveTab('Users')}><Users size={20} /> Users</div>
           <div className={`nav-item ${activeTab === 'All Appointments' ? 'active' : ''}`} onClick={() => setActiveTab('All Appointments')}><CalendarIcon size={20} /> All Appointments</div>
           <div className="nav-item"><CreditCard size={20} /> Payments</div>
           <div className="nav-item"><Video size={20} /> Telemedicine Logs</div>
@@ -227,10 +227,10 @@ export default function AdminDashboard() {
           </section>
         )}
 
-        {activeTab === 'Users & Roles' && (
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-             <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
-                 {['DOCTORS', 'PATIENTS'].map(tab => (
+          {activeTab === 'Users' && (
+            <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+               <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
+                   {['DOCTORS', 'PATIENTS', 'ADMINS'].map(tab => (
                      <button 
                         key={tab}
                         onClick={() => setUserTab(tab)}
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
 
              {userTab === 'PATIENTS' && (
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                     {patients.map(pat => (
+                       {patients.filter(p => !p.role || p.role === 'PATIENT').map(pat => (
                          <div key={pat.id} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                  <div>
@@ -297,9 +297,33 @@ export default function AdminDashboard() {
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{pat.phone}</p>
                                  </div>
                              </div>
-                             
+
                              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '12px' }}>
                                 <button className="btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.9rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }} onClick={() => handleDeletePatient(pat.id)}>
+                                    Delete Account
+                                </button>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+             )}
+
+             {userTab === 'ADMINS' && (
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                       {patients.filter(p => p.role === 'ADMIN').map(admin => (
+                         <div key={admin.id} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                 <div>
+                                    <h4 className="text-h3" style={{ fontSize: '1.2rem', marginBottom: '4px' }}>
+                                        {admin.firstName} {admin.lastName}
+                                    </h4>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{admin.email}</p>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{admin.phone}</p>
+                                 </div>
+                             </div>
+
+                             <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '12px' }}>
+                                <button className="btn-outline" style={{ flex: 1, padding: '8px', fontSize: '0.9rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }} onClick={() => alert('Administrative override required.')}>
                                     Delete Account
                                 </button>
                              </div>

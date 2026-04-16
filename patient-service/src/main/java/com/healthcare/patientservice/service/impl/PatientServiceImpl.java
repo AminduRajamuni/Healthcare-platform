@@ -332,6 +332,9 @@ public class PatientServiceImpl implements PatientService {
     dto.setEmail(patient.getEmail());
     dto.setPhone(patient.getPhone());
     dto.setCreatedAt(patient.getCreatedAt());
+    if (patient.getRole() != null) {
+      dto.setRole(patient.getRole().name());
+    }
     return dto;
   }
 
