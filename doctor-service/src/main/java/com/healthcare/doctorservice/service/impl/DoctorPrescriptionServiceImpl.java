@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DoctorPrescriptionServiceImpl implements DoctorPrescriptionService {
 
-    private static final String PATIENT_SERVICE_BASE_URL = "http://localhost:8080/api/patients";
+    private static final String PATIENT_SERVICE_BASE_URL = "http://patient-service:8080/api/patients";
 
     private final DoctorRepository doctorRepository;
     private final RestTemplate restTemplate;

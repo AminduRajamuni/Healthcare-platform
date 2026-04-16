@@ -17,7 +17,7 @@ public class DoctorClient {
         log.info("Fetching name for doctor ID: {}", doctorId);
         try {
             DoctorDto doctorDto = restTemplate.getForObject(
-                    "http://localhost:8081/api/doctors/" + doctorId, 
+                    "http://doctor-service:8081/api/doctors/" + doctorId, 
                     DoctorDto.class
             );
             

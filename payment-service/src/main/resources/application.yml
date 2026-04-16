@@ -5,9 +5,9 @@ spring:
   application:
     name: payment-service
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
   datasource:
-    url: jdbc:mysql://localhost:3306/payment_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://mysql:3306/payment_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: Password123@
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -24,14 +24,14 @@ payhere:
   merchant-id: 1235071
   merchant-secret: MTg1MDkwNTIxNzQ1NDM1NjkxMTg1ODgxMjMzMTQ1MTE4NjAyOQ==
   checkout-url: https://sandbox.payhere.lk/pay/checkout
-  return-url: ${PAYHERE_RETURN_URL:http://localhost:8086/api/payments/payhere/return}
-  cancel-url: ${PAYHERE_CANCEL_URL:http://localhost:8086/api/payments/payhere/cancel}
-  notify-url: ${PAYHERE_NOTIFY_URL:http://localhost:8086/api/payments/payhere/notify}
+  return-url: ${PAYHERE_RETURN_URL:http://payment-service:8086/api/payments/payhere/return}
+  cancel-url: ${PAYHERE_CANCEL_URL:http://payment-service:8086/api/payments/payhere/cancel}
+  notify-url: ${PAYHERE_NOTIFY_URL:http://payment-service:8086/api/payments/payhere/notify}
   sandbox: true
 
 services:
   appointment:
-    base-url: ${APPOINTMENT_SERVICE_BASE_URL:http://localhost:8082}
+    base-url: ${APPOINTMENT_SERVICE_BASE_URL:http://appointment-service:8082}
 
 events:
   payment:

@@ -36,7 +36,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         // 1. Validate Patient via API call
         try {
             log.info("Calling patient-service to verify Patient ID: {}", appointment.getPatientId());
-            ResponseEntity<PatientDto> patientResponse = restTemplate.getForEntity("http://localhost:8080/api/patients/" + appointment.getPatientId(), PatientDto.class);
+            ResponseEntity<PatientDto> patientResponse = restTemplate.getForEntity("http://patient-service:8080/api/patients/" + appointment.getPatientId(), PatientDto.class);
             log.info("Patient verified successfully: {}", patientResponse.getBody().getName());
         } catch (HttpClientErrorException.NotFound e) {
             log.error("Patient validation failed: HTTP 404 Not Found");
@@ -50,7 +50,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         try {
             log.info("Calling doctor-service to verify Doctor ID: {}", appointment.getDoctorId());
             ResponseEntity<DoctorDto> doctorResponse = restTemplate.getForEntity(
-                    "http://localhost:8081/api/doctors/" + appointment.getDoctorId(), DoctorDto.class);
+                    "http://doctor-service:8081/api/doctors/" + appointment.getDoctorId(), DoctorDto.class);
             
             DoctorDto doctorDto = doctorResponse.getBody();
             if (doctorDto != null) {
