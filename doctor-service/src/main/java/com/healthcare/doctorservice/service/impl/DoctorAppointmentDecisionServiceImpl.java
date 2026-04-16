@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DoctorAppointmentDecisionServiceImpl implements DoctorAppointmentDecisionService {
 
-    private static final String APPOINTMENT_SERVICE_BASE_URL = "http://localhost:8082/api/appointments";
+    private static final String APPOINTMENT_SERVICE_BASE_URL = "http://appointment-service:8082/api/appointments";
 
     private final DoctorRepository doctorRepository;
     private final RestTemplate restTemplate;
