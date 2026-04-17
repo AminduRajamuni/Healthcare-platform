@@ -16,7 +16,10 @@ export default function AdminManagePatientsPage() {
 			setLoading(true);
 			try {
 				const data = await patientService.getAllPatients();
-				setPatients(Array.isArray(data) ? data : []);
+				const patientsArray = Array.isArray(data) ? data : [];
+				// Ensure that only patients with role PATIENT are displayed (as a fallback or extra level of security)
+				const filteredPatients = patientsArray.filter((p) => p.role === 'PATIENT' || !p.role);
+				setPatients(filteredPatients);
 			} catch (err) {
 				console.error('Failed to load patients', err);
 				setError('Failed to load patients.');

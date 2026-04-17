@@ -169,6 +169,25 @@ public class PatientController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
+  // Download Medical Report (patient/admin/doctor)
+  @GetMapping("/{id}/reports/{reportId}/download")
+  @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")
+  public ResponseEntity<org.springframework.core.io.ByteArrayResource> downloadMedicalReport(
+      @PathVariable("id") Long patientId,
+      @PathVariable("reportId") Long reportId) {
+
+    com.healthcare.patientservice.entity.MedicalReport report = patientService.getMedicalReportData(patientId,
+        reportId);
+    org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(
+        report.getData());
+
+    return org.springframework.http.ResponseEntity.ok()
+        .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + report.getFileName() + "\"")
+        .contentType(org.springframework.http.MediaType.parseMediaType(report.getContentType()))
+        .body(resource);
+  }
+
   // Book appointment for patient (patient or admin)
   @PostMapping("/{id}/appointments")
   @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #patientId.toString().equals(authentication.principal))")

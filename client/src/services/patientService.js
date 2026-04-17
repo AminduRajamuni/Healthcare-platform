@@ -110,8 +110,19 @@ const patientService = {
             console.error(`Error deleting medical report ${reportId} for patient ${id}`, error);
             throw error;
         }
-    },
-    searchDoctors: async (specialty) => {
+    },    downloadReport: async (id, reportId) => {
+        try {
+            const config = {
+                ...getAuthHeaders(),
+                responseType: 'blob'
+            };
+            const response = await axios.get(`${API_URL}/${id}/reports/${reportId}/download`, config);
+            return response;
+        } catch (error) {
+            console.error(`Error downloading medical report ${reportId} for patient ${id}`, error);
+            throw error;
+        }
+    },    searchDoctors: async (specialty) => {
         try {
             const params = specialty ? { specialty } : {};
             const response = await axios.get(`${API_URL}/doctors/search`, {

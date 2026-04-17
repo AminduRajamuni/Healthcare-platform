@@ -33,6 +33,8 @@ public interface PatientService {
 
   void deleteMedicalReport(Long patientId, Long reportId);
 
+  com.healthcare.patientservice.entity.MedicalReport getMedicalReportData(Long patientId, Long reportId);
+
   // Cross-service operations
   java.util.List<DoctorDto> searchDoctors(String specialty);
 
