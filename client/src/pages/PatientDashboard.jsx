@@ -8,6 +8,9 @@ import {
   Clock,
   LogOut,
   RotateCw,
+  Users,
+  FileText,
+  Video,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import appointmentService from "../services/appointmentService";
@@ -253,14 +256,47 @@ export default function PatientDashboard() {
           >
             <Stethoscope size={20} /> Symptom Checker
           </div>
-          <div className="nav-item">
-            <Clock size={20} /> Medical History
-          </div>
           <div
             className={`nav-item ${dashboardSection === "payments" ? "active" : ""}`}
             onClick={() => setDashboardSection("payments")}
           >
             <CreditCard size={20} /> Invoices & Payments
+          </div>
+          <div
+            className="nav-item"
+            onClick={() => navigate("/patient/profile")}
+          >
+            <Users size={20} /> My Profile
+          </div>
+          <div
+            className="nav-item"
+            onClick={() => navigate("/patient/sessions")}
+          >
+            <Video size={20} /> Telemedicine Sessions
+          </div>
+          <div
+            className="nav-item"
+            onClick={() => navigate("/patient/medical-history")}
+          >
+            <Clock size={20} /> Medical History
+          </div>
+          <div
+            className="nav-item"
+            onClick={() => navigate("/patient/prescriptions")}
+          >
+            <FileText size={20} /> Prescriptions
+          </div>
+          <div
+            className="nav-item"
+            onClick={() => navigate("/patient/reports")}
+          >
+            <FileText size={20} /> Medical Reports
+          </div>
+          <div
+            className="nav-item"
+            onClick={() => navigate("/patient/search-doctors")}
+          >
+            <Stethoscope size={20} /> Search Doctors
           </div>
         </nav>
 

@@ -27,7 +27,10 @@
   transition: all 0.2s ease;
   outline: none;
 }
-
+.glass-input option {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
 .glass-input:focus {
   border-color: var(--gradient-1);
   background: rgba(255, 255, 255, 0.08);

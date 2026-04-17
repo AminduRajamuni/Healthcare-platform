@@ -21,6 +21,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,14 +73,14 @@ public class PatientServiceImpl implements PatientService {
     patient.setPassword(request.getPassword());
 
     if (request.getRole() != null && !request.getRole().isBlank()) {
-        try {
-            patient.setRole(Role.valueOf(request.getRole().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid role provided: {}, defaulting to PATIENT", request.getRole());
-            patient.setRole(Role.PATIENT);
-        }
-    } else {
+      try {
+        patient.setRole(Role.valueOf(request.getRole().toUpperCase()));
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid role provided: {}, defaulting to PATIENT", request.getRole());
         patient.setRole(Role.PATIENT);
+      }
+    } else {
+      patient.setRole(Role.PATIENT);
     }
 
     Patient saved = patientRepository.save(patient);
@@ -86,8 +90,7 @@ public class PatientServiceImpl implements PatientService {
   @Override
   public PatientProfileDto getPatientById(Long id) {
     Patient patient = patientRepository.findByIdAndDeletedFalse(id).orElseThrow(
-        () -> new ResourceNotFoundException("Patient", "id", id)
-    );
+        () -> new ResourceNotFoundException("Patient", "id", id));
     return mapToProfileDto(patient);
   }
 
@@ -102,10 +105,10 @@ public class PatientServiceImpl implements PatientService {
   @Override
   public PatientProfileDto updatePatient(Long id, UpdatePatientRequest request) {
     Patient existingPatient = patientRepository.findByIdAndDeletedFalse(id).orElseThrow(
-        () -> new ResourceNotFoundException("Patient", "id", id)
-    );
+        () -> new ResourceNotFoundException("Patient", "id", id));
 
-    // If email were updatable we would handle uniqueness here; currently it's fixed.
+    // If email were updatable we would handle uniqueness here; currently it's
+    // fixed.
     existingPatient.setFirstName(request.getFirstName());
     existingPatient.setLastName(request.getLastName());
     existingPatient.setPhone(request.getPhone());
@@ -119,8 +122,7 @@ public class PatientServiceImpl implements PatientService {
   @Override
   public void deletePatient(Long id) {
     Patient existingPatient = patientRepository.findByIdAndDeletedFalse(id).orElseThrow(
-        () -> new ResourceNotFoundException("Patient", "id", id)
-    );
+        () -> new ResourceNotFoundException("Patient", "id", id));
     existingPatient.setDeleted(true);
     patientRepository.save(existingPatient);
   }
@@ -133,7 +135,8 @@ public class PatientServiceImpl implements PatientService {
 
   @Override
   public MedicalHistoryDto addMedicalHistory(Long patientId, CreateMedicalHistoryRequest request) {
-    // Only allow access if current user is patient, doctor, or admin; role restriction handled via controller
+    // Only allow access if current user is patient, doctor, or admin; role
+    // restriction handled via controller
     MedicalHistory mh = new MedicalHistory();
     mh.setPatientId(patientId);
     mh.setCondition(request.getCondition());
@@ -151,7 +154,8 @@ public class PatientServiceImpl implements PatientService {
 
   @Override
   public PrescriptionDto addPrescription(Long patientId, CreatePrescriptionRequest request) {
-    // Controller will restrict to DOCTOR/ADMIN, but still ensure patient exists and access is valid
+    // Controller will restrict to DOCTOR/ADMIN, but still ensure patient exists and
+    // access is valid
     Prescription p = new Prescription();
     p.setPatientId(patientId);
     p.setDoctorName(request.getDoctorName());
@@ -228,8 +232,7 @@ public class PatientServiceImpl implements PatientService {
       AppointmentDto response = restTemplate.postForObject(
           appointmentServiceBaseUrl,
           payload,
-          AppointmentDto.class
-      );
+          AppointmentDto.class);
 
       if (response == null) {
         throw new IllegalStateException("Appointment service returned empty response");
@@ -279,7 +282,8 @@ public class PatientServiceImpl implements PatientService {
       throw new IllegalArgumentException("Forbidden");
     }
 
-    // Call telemedicine-service to locate session(s) for this patient, then filter by appointmentId
+    // Call telemedicine-service to locate session(s) for this patient, then filter
+    // by appointmentId
     String sessionUrl = telemedicineServiceBaseUrl + "/patient/" + patientId;
     HttpHeaders headers = new HttpHeaders();
     HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -289,8 +293,7 @@ public class PatientServiceImpl implements PatientService {
           sessionUrl,
           HttpMethod.GET,
           entity,
-          TelemedicineSessionDto[].class
-      );
+          TelemedicineSessionDto[].class);
 
       TelemedicineSessionDto[] sessions = response.getBody();
       if (sessions == null || sessions.length == 0) {
@@ -303,12 +306,86 @@ public class PatientServiceImpl implements PatientService {
           .orElseThrow(() -> new ResourceNotFoundException("TelemedicineSession", "appointmentId", appointmentId));
 
     } catch (RestClientException ex) {
-      log.error("Failed to fetch telemedicine sessions for patient {} from telemedicine-service: {}", patientId, ex.getMessage(), ex);
+      log.error("Failed to fetch telemedicine sessions for patient {} from telemedicine-service: {}", patientId,
+          ex.getMessage(), ex);
       throw new IllegalStateException("Failed to fetch telemedicine session", ex);
     }
   }
 
+  @Override
+  public List<DoctorPatientSummaryDto> getPatientsForDoctor(Long doctorId) {
+    String url = appointmentServiceBaseUrl + "/doctor/" + doctorId;
 
+    HttpHeaders headers = new HttpHeaders();
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null) {
+      String userId = auth.getName();
+      String role = auth.getAuthorities().stream()
+          .findFirst()
+          .map(a -> a.getAuthority().replace("ROLE_", ""))
+          .orElse(null);
+      if (userId != null)
+        headers.set("X-User-Id", userId);
+      if (role != null)
+        headers.set("X-User-Role", role);
+    }
+
+    try {
+      ResponseEntity<AppointmentServiceAppointmentDto[]> response = restTemplate.exchange(
+          url,
+          HttpMethod.GET,
+          new HttpEntity<>(headers),
+          AppointmentServiceAppointmentDto[].class);
+
+      AppointmentServiceAppointmentDto[] appointments = response.getBody();
+      if (appointments == null || appointments.length == 0) {
+        return Collections.emptyList();
+      }
+
+      Map<Long, AppointmentServiceAppointmentDto> latestByPatient = Arrays.stream(appointments)
+          .filter(a -> a.getPatientId() != null)
+          .collect(Collectors.toMap(
+              AppointmentServiceAppointmentDto::getPatientId,
+              a -> a,
+              (a, b) -> {
+                if (a.getAppointmentDate() == null)
+                  return b;
+                if (b.getAppointmentDate() == null)
+                  return a;
+                return a.getAppointmentDate().isAfter(b.getAppointmentDate()) ? a : b;
+              }));
+
+      Set<Long> patientIds = latestByPatient.keySet();
+
+      List<Patient> patients = patientRepository.findAllById(patientIds).stream()
+          .filter(p -> !p.isDeleted())
+          .toList();
+
+      Map<Long, Patient> patientById = patients.stream()
+          .collect(Collectors.toMap(Patient::getId, p -> p));
+
+      return patientIds.stream()
+          .map(patientById::get)
+          .filter(p -> p != null)
+          .map(p -> {
+            AppointmentServiceAppointmentDto latest = latestByPatient.get(p.getId());
+            DoctorPatientSummaryDto dto = new DoctorPatientSummaryDto();
+            dto.setPatientId(p.getId());
+            dto.setFirstName(p.getFirstName());
+            dto.setLastName(p.getLastName());
+            dto.setEmail(p.getEmail());
+            dto.setPhone(p.getPhone());
+            dto.setLastAppointmentDate(latest != null ? latest.getAppointmentDate() : null);
+            return dto;
+          })
+          .sorted(Comparator.comparing(DoctorPatientSummaryDto::getLastAppointmentDate,
+              Comparator.nullsLast(Comparator.reverseOrder())))
+          .toList();
+    } catch (RestClientException ex) {
+      log.error("Failed to fetch appointments from appointment-service for doctor {}: {}", doctorId, ex.getMessage());
+      return Collections.emptyList();
+    }
+  }
 
   private PatientProfileDto mapToProfileDto(Patient patient) {
     PatientProfileDto dto = new PatientProfileDto();
@@ -332,6 +409,9 @@ public class PatientServiceImpl implements PatientService {
     dto.setEmail(patient.getEmail());
     dto.setPhone(patient.getPhone());
     dto.setCreatedAt(patient.getCreatedAt());
+    if (patient.getRole() != null) {
+      dto.setRole(patient.getRole().name());
+    }
     return dto;
   }
 

@@ -429,10 +429,14 @@ export default function DoctorDashboard() {
       setDoctorProfile(updated);
       setProfileForm({ email: updated.email, phone: updated.phone });
       setSectionMessage(
-        field === "email" ? "Email updated successfully." : "Phone number updated successfully."
+        field === "email"
+          ? "Email updated successfully."
+          : "Phone number updated successfully.",
       );
     } catch (err) {
-      setSectionError(err?.response?.data?.message || "Failed to update profile.");
+      setSectionError(
+        err?.response?.data?.message || "Failed to update profile.",
+      );
     } finally {
       setProfileSaving(false);
     }
@@ -1351,12 +1355,18 @@ export default function DoctorDashboard() {
                   key={tab.key}
                   onClick={() => {
                     setHistoryTab(tab.key);
-                    if (tab.key === "prescriptions" && doctorPrescriptions.length === 0) {
+                    if (
+                      tab.key === "prescriptions" &&
+                      doctorPrescriptions.length === 0
+                    ) {
                       setPrescriptionsLoading(true);
                       Promise.all(
                         doctorPatients.map((p) =>
-                          doctorService.getPrescriptionsForPatient(doctorProfile?.id, p.id)
-                        )
+                          doctorService.getPrescriptionsForPatient(
+                            doctorProfile?.id,
+                            p.id,
+                          ),
+                        ),
                       )
                         .then((results) => {
                           setDoctorPrescriptions(results.flat());
@@ -1415,7 +1425,13 @@ export default function DoctorDashboard() {
                           }`,
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                          }}
+                        >
                           <span style={{ fontWeight: 600, fontSize: "1rem" }}>
                             {patientName}
                           </span>
@@ -1426,7 +1442,9 @@ export default function DoctorDashboard() {
                             }}
                           >
                             {formatDate(appt.appointmentDate)}
-                            {appt.startTime ? ` • ${formatTime(appt.startTime)}` : ""}
+                            {appt.startTime
+                              ? ` • ${formatTime(appt.startTime)}`
+                              : ""}
                           </span>
                           {appt.reason && (
                             <span
@@ -1480,7 +1498,8 @@ export default function DoctorDashboard() {
                   telemedicineSessions.map((session, index) => {
                     const sessionId =
                       session.sessionId || session.id || session.session_id;
-                    const status = session.status || session.state || "UNKNOWN";
+                    const status =
+                      session.status || session.state || "UNKNOWN";
                     const patientId =
                       session.patientId || session.patient_id;
                     const patient = doctorPatients.find(
@@ -1489,8 +1508,8 @@ export default function DoctorDashboard() {
                     const patientName = patient
                       ? `${patient.firstName} ${patient.lastName}`
                       : patientId
-                      ? `Patient #${patientId}`
-                      : null;
+                        ? `Patient #${patientId}`
+                        : null;
                     const isActive =
                       status === "ACTIVE" || status === "IN_PROGRESS";
                     return (
@@ -1513,7 +1532,13 @@ export default function DoctorDashboard() {
                             flexWrap: "wrap",
                           }}
                         >
-                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "4px",
+                            }}
+                          >
                             <h4 style={{ fontSize: "1rem", margin: 0 }}>
                               Session #{sessionId || "N/A"}
                             </h4>
@@ -1547,7 +1572,9 @@ export default function DoctorDashboard() {
                               background: isActive
                                 ? "rgba(59,130,246,0.15)"
                                 : "rgba(255,255,255,0.07)",
-                              color: isActive ? "#3b82f6" : "var(--text-secondary)",
+                              color: isActive
+                                ? "#3b82f6"
+                                : "var(--text-secondary)",
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -1576,14 +1603,17 @@ export default function DoctorDashboard() {
             {historyTab === "prescriptions" && (
               <div>
                 {prescriptionsLoading ? (
-                  <div style={{ color: "var(--text-secondary)", padding: "12px" }}>
+                  <div
+                    style={{ color: "var(--text-secondary)", padding: "12px" }}
+                  >
                     Loading prescriptions...
                   </div>
                 ) : doctorPrescriptions.length > 0 ? (
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(300px, 1fr))",
                       gap: "16px",
                     }}
                   >
@@ -1609,7 +1639,6 @@ export default function DoctorDashboard() {
                             borderTop: "3px solid #8b5cf6",
                           }}
                         >
-                          {/* Card header */}
                           <div
                             style={{
                               display: "flex",
@@ -1652,7 +1681,6 @@ export default function DoctorDashboard() {
                             </span>
                           </div>
 
-                          {/* Medicines list */}
                           {medicines.length > 0 && (
                             <div
                               style={{
@@ -1684,10 +1712,14 @@ export default function DoctorDashboard() {
                                     fontSize: "0.88rem",
                                   }}
                                 >
-                                  <span>{med.medicine || med.name || med}</span>
+                                  <span>
+                                    {med.medicine || med.name || med}
+                                  </span>
                                   {med.dosage && (
                                     <span
-                                      style={{ color: "var(--text-secondary)" }}
+                                      style={{
+                                        color: "var(--text-secondary)",
+                                      }}
                                     >
                                       {med.dosage}
                                     </span>
@@ -1697,7 +1729,6 @@ export default function DoctorDashboard() {
                             </div>
                           )}
 
-                          {/* Description */}
                           {rx.description && (
                             <p
                               style={{
@@ -1775,7 +1806,9 @@ export default function DoctorDashboard() {
                 >
                   {doctorProfile?.name || "—"}
                 </h2>
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                <p
+                  style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}
+                >
                   {doctorProfile?.specialization || "—"}
                 </p>
                 <div
@@ -1802,7 +1835,9 @@ export default function DoctorDashboard() {
                     }}
                   >
                     <Shield size={12} />
-                    {doctorProfile?.isVerified ? "Verified" : "Pending Verification"}
+                    {doctorProfile?.isVerified
+                      ? "Verified"
+                      : "Pending Verification"}
                   </span>
                   <span
                     style={{
@@ -1836,13 +1871,7 @@ export default function DoctorDashboard() {
               </h3>
 
               {/* Email row */}
-              <div
-                style={{
-                  display: "grid",
-                  gap: "6px",
-                  marginBottom: "20px",
-                }}
-              >
+              <div style={{ display: "grid", gap: "6px", marginBottom: "20px" }}>
                 <label
                   style={{
                     display: "flex",
@@ -1981,7 +2010,6 @@ export default function DoctorDashboard() {
           </section>
         )}
       </main>
-
     </div>
   );
 }

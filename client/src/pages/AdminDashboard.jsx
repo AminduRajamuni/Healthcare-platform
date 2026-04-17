@@ -231,7 +231,7 @@ export default function AdminDashboard() {
           >
             <CreditCard size={20} /> Payments
           </div>
-          <div className="nav-item">
+          <div className="nav-item" onClick={() => navigate("/admin/sessions")}>
             <Video size={20} /> Telemedicine Logs
           </div>
           <div className="nav-item">
@@ -468,7 +468,7 @@ export default function AdminDashboard() {
                 paddingBottom: "12px",
               }}
             >
-              {["DOCTORS", "PATIENTS"].map((tab) => (
+              {["DOCTORS", "PATIENTS", "ADMINS"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setUserTab(tab)}
@@ -608,7 +608,7 @@ export default function AdminDashboard() {
                   gap: "24px",
                 }}
               >
-                {patients.map((pat) => (
+                {patients.filter((p) => !p.role || p.role === "PATIENT").map((pat) => (
                   <div
                     key={pat.id}
                     className="glass-panel"
@@ -669,6 +669,84 @@ export default function AdminDashboard() {
                           color: "#ef4444",
                         }}
                         onClick={() => handleDeletePatient(pat.id)}
+                      >
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {userTab === "ADMINS" && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: "24px",
+                }}
+              >
+                {patients.filter((p) => p.role === "ADMIN").map((admin) => (
+                  <div
+                    key={admin.id}
+                    className="glass-panel"
+                    style={{
+                      padding: "20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div>
+                        <h4
+                          className="text-h3"
+                          style={{ fontSize: "1.2rem", marginBottom: "4px" }}
+                        >
+                          {admin.firstName} {admin.lastName}
+                        </h4>
+                        <p
+                          style={{
+                            color: "var(--text-secondary)",
+                            fontSize: "0.85rem",
+                          }}
+                        >
+                          {admin.email}
+                        </p>
+                        <p
+                          style={{
+                            color: "var(--text-secondary)",
+                            fontSize: "0.85rem",
+                          }}
+                        >
+                          {admin.phone}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        marginTop: "auto",
+                        paddingTop: "12px",
+                      }}
+                    >
+                      <button
+                        className="btn-outline"
+                        style={{
+                          flex: 1,
+                          padding: "8px",
+                          fontSize: "0.9rem",
+                          borderColor: "rgba(239, 68, 68, 0.3)",
+                          color: "#ef4444",
+                        }}
+                        onClick={() => alert("Administrative override required.")}
                       >
                         Delete Account
                       </button>

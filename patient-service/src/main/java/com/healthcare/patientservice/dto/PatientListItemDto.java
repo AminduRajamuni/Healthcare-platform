@@ -18,6 +18,6 @@ public class PatientListItemDto {
 	private String email;
 	private String phone;
 	private LocalDateTime createdAt;
+        private String role;
+
 }
-
-

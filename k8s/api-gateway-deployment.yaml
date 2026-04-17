@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: healthcare-platform-api-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8084
+        env:
+        # Assuming Gateway connects via routes defined via env or internal service names
+        # Standard Spring Cloud Gateway overriding for service URLs
+        - name: PATIENT_SERVICE_URL
+          value: "http://patient-service:8080"
+        - name: APPOINTMENT_SERVICE_URL
+          value: "http://appointment-service:8082"
