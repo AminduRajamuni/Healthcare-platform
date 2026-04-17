@@ -7,6 +7,7 @@ const BookAppointmentModal = ({ isOpen, onClose, patientId, onBooked }) => {
     const [step, setStep] = useState(1);
     const [doctors, setDoctors] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedSpecialization, setSelectedSpecialization] = useState('All');
     
     // Booking states
     const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -28,6 +29,10 @@ const BookAppointmentModal = ({ isOpen, onClose, patientId, onBooked }) => {
     // Generate 1-hour time slots for a day (e.g. 09:00 to 17:00)
     const exactSlots = [
         "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
+    ];
+
+    const specializations = [
+        "All", "Cardiology", "Psychiatry", "General Practitioner", "Pediatrics", "Orthopedics", "Neurology", "Dermatology", "Oncology", "Gastroenterology"
     ];
 
     useEffect(() => {
@@ -133,11 +138,16 @@ const BookAppointmentModal = ({ isOpen, onClose, patientId, onBooked }) => {
         }
     };
 
-    const filteredDoctors = doctors.filter(d => 
-        (d.isVerified === true || d.isVerified === undefined) &&
-        ((d.name || d.firstName + ' ' + d.lastName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (d.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredDoctors = doctors.filter(d => {
+        const isVerified = d.isVerified === true || d.isVerified === undefined;
+        const matchesSearch = ((d.name || d.firstName + ' ' + d.lastName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (d.specialization || d.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()));
+        
+        const docSpec = d.specialization || d.specialty || 'General Practitioner';
+        const matchesSpecialization = selectedSpecialization === 'All' || docSpec.toLowerCase() === selectedSpecialization.toLowerCase();
+
+        return isVerified && matchesSearch && matchesSpecialization;
+    });
 
     if (!isOpen) return null;
 
@@ -176,47 +186,73 @@ const BookAppointmentModal = ({ isOpen, onClose, patientId, onBooked }) => {
                     )}
 
                     {step === 1 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ position: 'relative' }}>
-                                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                <input 
-                                    type="text" 
-                                    className="form-input" 
-                                    placeholder="Search by name or specialty..." 
-                                    style={{ paddingLeft: '48px', width: '100%' }}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                        <div style={{ display: 'flex', gap: '20px', height: '100%', flexDirection: 'row' }}>
+                            {/* Specialization Filter Sidebar */}
+                            <div style={{ width: '180px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', paddingRight: '12px', borderRight: '1px solid var(--glass-border)' }}>
+                                <h4 style={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Specialization</h4>
+                                {specializations.map(spec => (
+                                    <button
+                                        key={spec}
+                                        onClick={() => setSelectedSpecialization(spec)}
+                                        style={{
+                                            padding: '10px 12px',
+                                            textAlign: 'left',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            border: '1px solid ' + (selectedSpecialization === spec ? 'var(--gradient-1)' : 'transparent'),
+                                            background: selectedSpecialization === spec ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                                            color: selectedSpecialization === spec ? '#fff' : 'var(--text-secondary)',
+                                            transition: 'all 0.2s',
+                                            fontWeight: selectedSpecialization === spec ? 600 : 400
+                                        }}
+                                    >
+                                        {spec}
+                                    </button>
+                                ))}
                             </div>
-                            
-                            {loading ? (
-                                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>Loading doctors...</div>
-                            ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                                    {filteredDoctors.map(doctor => (
-                                        <div 
-                                            key={doctor.id}
-                                            style={{ 
-                                                padding: '16px', borderRadius: '12px', cursor: 'pointer',
-                                                background: selectedDoctor?.id === doctor.id ? 'rgba(168, 85, 247, 0.15)' : 'var(--glass-bg)',
-                                                border: `1px solid ${selectedDoctor?.id === doctor.id ? 'var(--gradient-1)' : 'var(--glass-border)'}`,
-                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                transition: 'all 0.2s'
-                                            }}
-                                            onClick={() => setSelectedDoctor(doctor)}
-                                        >
-                                            <div>
-                                                <h4 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{doctor.name || `${doctor.firstName} ${doctor.lastName}`}</h4>
-                                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{doctor.specialty || 'General Practitioner'}</p>
-                                            </div>
-                                            {selectedDoctor?.id === doctor.id && <UserCheck size={20} color="#a855f7" />}
-                                        </div>
-                                    ))}
-                                    {filteredDoctors.length === 0 && (
-                                         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>No doctors found.</div>
-                                    )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                                    <input 
+                                        type="text" 
+                                        className="form-input" 
+                                        placeholder="Search by name or specialty..." 
+                                        style={{ paddingLeft: '48px', width: '100%' }}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
                                 </div>
-                            )}
+                                
+                                {loading ? (
+                                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>Loading doctors...</div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                                        {filteredDoctors.map(doctor => (
+                                            <div 
+                                                key={doctor.id}
+                                                style={{ 
+                                                    padding: '16px', borderRadius: '12px', cursor: 'pointer',
+                                                    background: selectedDoctor?.id === doctor.id ? 'rgba(168, 85, 247, 0.15)' : 'var(--glass-bg)',
+                                                    border: `1px solid ${selectedDoctor?.id === doctor.id ? 'var(--gradient-1)' : 'var(--glass-border)'}`,
+                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                onClick={() => setSelectedDoctor(doctor)}
+                                            >
+                                                <div>
+                                                    <h4 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{doctor.name || `${doctor.firstName} ${doctor.lastName}`}</h4>
+                                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{doctor.specialization || doctor.specialty || 'General Practitioner'}</p>
+                                                </div>
+                                                {selectedDoctor?.id === doctor.id && <UserCheck size={20} color="#a855f7" />}
+                                            </div>
+                                        ))}
+                                        {filteredDoctors.length === 0 && (
+                                            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px' }}>No doctors found.</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
