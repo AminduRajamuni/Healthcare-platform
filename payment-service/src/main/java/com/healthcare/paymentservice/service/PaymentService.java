@@ -1,5 +1,7 @@
 package com.healthcare.paymentservice.service;
 
+import java.util.List;
+
 import com.healthcare.paymentservice.dto.CreatePaymentRequest;
 import com.healthcare.paymentservice.dto.PayHereInitiateRequest;
 import com.healthcare.paymentservice.dto.PayHereInitiateResponse;
@@ -22,4 +24,6 @@ public interface PaymentService {
     Payment cancelPaymentByOrderId(String orderId);
 
     Payment getPaymentByAppointmentId(Long appointmentId);
+
+    List<Payment> getAllPayments();
 }
