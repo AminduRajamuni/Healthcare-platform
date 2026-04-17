@@ -98,6 +98,7 @@ public class PatientServiceImpl implements PatientService {
   public List<PatientListItemDto> getAllPatients() {
     List<Patient> patients = patientRepository.findAllByDeletedFalse();
     return patients.stream()
+        .filter(p -> p.getRole() != null && "PATIENT".equals(p.getRole().name()))
         .map(this::mapToListItemDto)
         .collect(Collectors.toList());
   }
@@ -197,6 +198,12 @@ public class PatientServiceImpl implements PatientService {
     MedicalReport report = medicalReportRepository.findByIdAndPatientId(reportId, patientId)
         .orElseThrow(() -> new ResourceNotFoundException("MedicalReport", "id", reportId));
     medicalReportRepository.delete(report);
+  }
+
+  @Override
+  public MedicalReport getMedicalReportData(Long patientId, Long reportId) {
+    return medicalReportRepository.findByIdAndPatientId(reportId, patientId)
+        .orElseThrow(() -> new ResourceNotFoundException("MedicalReport", "id", reportId));
   }
 
   @Override

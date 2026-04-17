@@ -73,10 +73,34 @@ export default function PatientReportsPage() {
     }
   };
 
-  const handleDownload = (report) => {
-    // Assuming there is a dedicated download endpoint in backend like /api/reports/{id}/download.
-    // If not yet implemented, this can be wired later.
-    window.open(`/api/reports/${report.id}/download`, '_blank');
+  const handleDownload = async (report) => {
+    if (!patientId) return;
+    try {
+      const response = await patientService.downloadReport(patientId, report.id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'report';
+      if (contentDisposition && contentDisposition.includes('filename=')) {
+        const matches = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (matches && matches[1]) {
+          filename = matches[1];
+        }
+      } else if (report.fileName) {
+          filename = report.fileName;
+      }
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to download report.');
+    }
   };
 
   return (
