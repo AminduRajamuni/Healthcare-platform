@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: symptom-checker-service
-        image: symptom-checker-service:latest
+        image: healthcare-platform-symptom-checker-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8087

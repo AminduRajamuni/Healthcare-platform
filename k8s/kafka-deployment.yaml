@@ -12,9 +12,10 @@ spec:
       labels:
         app: kafka
     spec:
+      enableServiceLinks: false
       containers:
       - name: kafka
-        image: confluentinc/cp-kafka:latest
+        image: confluentinc/cp-kafka:7.3.0
         ports:
         - containerPort: 9092
         env:
