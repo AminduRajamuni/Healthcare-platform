@@ -1,8 +1,8 @@
 package com.healthcare.doctorservice.dto;
 
-import java.time.LocalDate;
+import java.util.List;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,12 +15,21 @@ import lombok.Setter;
 @NoArgsConstructor
 public class IssuePrescriptionRequest {
 
-    @NotBlank(message = "Medicine is required")
-    private String medicine;
+    @NotEmpty(message = "At least one medicine is required")
+    private List<MedicineDosage> medicines;
 
-    @NotBlank(message = "Dosage is required")
-    private String dosage;
+    private String description;
 
-    @NotNull(message = "Date is required")
-    private LocalDate date;
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class MedicineDosage {
+
+        @NotNull(message = "Medicine is required")
+        private String medicine;
+
+        @NotNull(message = "Dosage is required")
+        private String dosage;
+    }
 }

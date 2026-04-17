@@ -2,16 +2,21 @@ package com.healthcare.paymentservice.service.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -62,8 +67,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // Generate identifiers for local record and gateway checkout order.
-        String transactionId = "txn_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-        String orderId = "PH_ORDER_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        String transactionId = generateUniqueTransactionId();
+        String orderId = generateUniqueOrderId();
         LocalDateTime now = LocalDateTime.now();
         String currency = request.getCurrency() == null || request.getCurrency().isBlank()
                 ? "LKR"
@@ -112,41 +117,61 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Initiating PayHere checkout for Appointment ID: {}", request.getAppointmentId());
 
         validatePayHereConfig();
+        validatePayHereRequestFields(request);
         validateAppointmentExists(request.getAppointmentId());
 
-        if (paymentRepository.existsByAppointmentId(request.getAppointmentId())) {
-            log.error("Payment already exists for Appointment ID {}", request.getAppointmentId());
-            throw new DuplicatePaymentException("A payment already exists for this appointment.");
+        LocalDateTime now = LocalDateTime.now();
+        Payment payment = paymentRepository.findByAppointmentId(request.getAppointmentId()).orElse(null);
+
+        if (payment != null) {
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                log.error("Successful payment already exists for Appointment ID {}", request.getAppointmentId());
+                throw new DuplicatePaymentException("A successful payment already exists for this appointment.");
+            }
+
+            // Always rotate gateway-facing IDs on every re-init to avoid stale/previously-used checkout references.
+            PaymentStatus previousStatus = payment.getStatus();
+            payment.setStatus(PaymentStatus.PENDING);
+            payment.setTransactionId(generateUniqueTransactionId());
+            payment.setOrderId(generateUniqueOrderId());
+            payment.setProvider("PAYHERE");
+            payment.setCurrency(request.getCurrency().toUpperCase(Locale.ROOT));
+            payment.setAmount(request.getAmount());
+            payment.setGatewayPaymentId(null);
+            payment.setStatusReason(previousStatus == PaymentStatus.PENDING
+                    ? "PAYHERE_CHECKOUT_RETRY_PENDING"
+                    : "PAYHERE_CHECKOUT_REINITIATED");
+            payment.setUpdatedAt(now);
+        } else {
+            payment = Payment.builder()
+                    .appointmentId(request.getAppointmentId())
+                    .amount(request.getAmount())
+                    .status(PaymentStatus.PENDING)
+                    .transactionId(generateUniqueTransactionId())
+                    .orderId(generateUniqueOrderId())
+                    .provider("PAYHERE")
+                    .currency(request.getCurrency().toUpperCase(Locale.ROOT))
+                    .gatewayPaymentId(null)
+                    .statusReason("PAYHERE_CHECKOUT_INITIATED")
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .build();
         }
 
-        String orderId = "PH_ORDER_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-        String transactionId = "txn_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-        LocalDateTime now = LocalDateTime.now();
-        String currency = request.getCurrency().toUpperCase(Locale.ROOT);
-        String amount = formatAmount(request.getAmount());
-
-        Payment payment = Payment.builder()
-                .appointmentId(request.getAppointmentId())
-                .amount(request.getAmount())
-                .status(PaymentStatus.PENDING)
-                .transactionId(transactionId)
-                .orderId(orderId)
-                .provider("PAYHERE")
-                .currency(currency)
-                .gatewayPaymentId(null)
-                .statusReason("PAYHERE_CHECKOUT_INITIATED")
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
-
         payment = paymentRepository.save(payment);
+        return buildPayHereInitiateResponse(request, payment);
+    }
 
+    private PayHereInitiateResponse buildPayHereInitiateResponse(PayHereInitiateRequest request, Payment payment) {
+        String amount = formatAmount(payment.getAmount());
+        String currency = payment.getCurrency().toUpperCase(Locale.ROOT);
+        validateGeneratedCheckoutPayload(request, payment, amount, currency);
         String hash = generatePayHereHash(
                 payHereProperties.getMerchantId(),
-                orderId,
+                payment.getOrderId(),
                 amount,
                 currency,
-                payHereProperties.getMerchantSecret());
+                resolveMerchantSecret());
 
         return PayHereInitiateResponse.builder()
                 .checkoutUrl(payHereProperties.getCheckoutUrl())
@@ -154,7 +179,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .returnUrl(payHereProperties.getReturnUrl())
                 .cancelUrl(payHereProperties.getCancelUrl())
                 .notifyUrl(payHereProperties.getNotifyUrl())
-                .orderId(orderId)
+                .orderId(payment.getOrderId())
                 .items("Appointment Payment #" + request.getAppointmentId())
                 .currency(currency)
                 .amount(amount)
@@ -203,10 +228,144 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void validatePayHereConfig() {
-        if (isBlank(payHereProperties.getMerchantId())
-                || isBlank(payHereProperties.getMerchantSecret())
-                || isBlank(payHereProperties.getCheckoutUrl())) {
-            throw new IllegalStateException("PayHere configuration is incomplete.");
+        String merchantId = payHereProperties.getMerchantId();
+        String merchantSecret = resolveMerchantSecret();
+        String checkoutUrl = payHereProperties.getCheckoutUrl();
+        String returnUrl = payHereProperties.getReturnUrl();
+        String cancelUrl = payHereProperties.getCancelUrl();
+        String notifyUrl = payHereProperties.getNotifyUrl();
+
+        if (isBlank(merchantId) || isBlank(merchantSecret) || isBlank(checkoutUrl)) {
+            throw new IllegalStateException(
+                    "PayHere configuration is incomplete. Set PAYHERE_MERCHANT_ID and PAYHERE_MERCHANT_SECRET for your sandbox account.");
+        }
+
+        if (isBlank(returnUrl) || isBlank(cancelUrl) || isBlank(notifyUrl)) {
+            throw new IllegalStateException(
+                    "PayHere callback configuration is incomplete. Set PAYHERE_RETURN_URL, PAYHERE_CANCEL_URL and PAYHERE_NOTIFY_URL.");
+        }
+
+        if (!merchantId.matches("^\\d+$")) {
+            throw new IllegalStateException("PayHere merchant_id must be numeric.");
+        }
+
+        boolean sandbox = Boolean.TRUE.equals(payHereProperties.getSandbox());
+        if (sandbox && !checkoutUrl.contains("sandbox.payhere.lk/pay/checkout")) {
+            throw new IllegalStateException("PayHere sandbox mode is enabled, but checkout URL is not sandbox.");
+        }
+        if (!sandbox && checkoutUrl.contains("sandbox.payhere.lk/pay/checkout")) {
+            throw new IllegalStateException("PayHere live mode is enabled, but checkout URL is sandbox.");
+        }
+
+        validateSandboxCallbackUrls(sandbox, returnUrl, cancelUrl, notifyUrl);
+
+        warnIfLocalUrl("return_url", returnUrl);
+        warnIfLocalUrl("cancel_url", cancelUrl);
+        warnIfLocalUrl("notify_url", notifyUrl);
+
+        if (isLocalUrl(notifyUrl)) {
+            log.warn("PayHere notify_url points to localhost; callbacks cannot reach localhost from PayHere.");
+        }
+    }
+
+    private void validateSandboxCallbackUrls(boolean sandbox, String returnUrl, String cancelUrl, String notifyUrl) {
+        if (!sandbox) {
+            return;
+        }
+
+        if (isLocalUrl(returnUrl) || isLocalUrl(cancelUrl) || isLocalUrl(notifyUrl)) {
+            throw new IllegalStateException(
+                    "PayHere sandbox callback URLs must be public (localhost/127.x/0.0.0.0 are not allowed)."
+                    + " return_url=" + returnUrl
+                    + ", cancel_url=" + cancelUrl
+                    + ", notify_url=" + notifyUrl);
+        }
+
+        String returnHost = extractUrlHost(returnUrl, "return_url");
+        String cancelHost = extractUrlHost(cancelUrl, "cancel_url");
+        String notifyHost = extractUrlHost(notifyUrl, "notify_url");
+
+        if (!returnHost.equalsIgnoreCase(cancelHost) || !returnHost.equalsIgnoreCase(notifyHost)) {
+            throw new IllegalStateException(
+                    "PayHere sandbox callback URLs must use the same host for return_url, cancel_url and notify_url.");
+        }
+    }
+
+    private void validatePayHereRequestFields(PayHereInitiateRequest request) {
+        if (request.getAmount() == null || request.getAmount() <= 0) {
+            throw new IllegalArgumentException("amount must be greater than 0.");
+        }
+
+        String currency = request.getCurrency() == null ? "" : request.getCurrency().trim().toUpperCase(Locale.ROOT);
+        if (!Set.of("LKR", "USD").contains(currency)) {
+            throw new IllegalArgumentException("currency must be LKR or USD for PayHere checkout.");
+        }
+
+        if (isBlank(request.getEmail()) || !request.getEmail().contains("@")) {
+            throw new IllegalArgumentException("email must be a valid email format.");
+        }
+
+        String phone = request.getPhone() == null ? "" : request.getPhone().replaceAll("\\s+", "");
+        if (!phone.matches("^[+0-9]{7,15}$")) {
+            throw new IllegalArgumentException("phone must be a valid phone number.");
+        }
+    }
+
+    private void validateGeneratedCheckoutPayload(PayHereInitiateRequest request, Payment payment, String amount,
+            String currency) {
+        if (isBlank(payment.getOrderId())) {
+            throw new IllegalStateException("order_id is required for PayHere checkout.");
+        }
+        if (payment.getOrderId().length() > 64) {
+            throw new IllegalStateException("order_id exceeds supported length for PayHere checkout.");
+        }
+        if (!amount.matches("^\\d+(\\.\\d{2})$")) {
+            throw new IllegalStateException("amount must be formatted with two decimals for PayHere hash validation.");
+        }
+        if (!Set.of("LKR", "USD").contains(currency)) {
+            throw new IllegalStateException("currency must be LKR or USD for PayHere checkout.");
+        }
+
+        if (isBlank(request.getFirstName()) || isBlank(request.getLastName())
+                || isBlank(request.getAddress()) || isBlank(request.getCity()) || isBlank(request.getCountry())) {
+            throw new IllegalStateException("PayHere customer fields are incomplete.");
+        }
+    }
+
+    private void warnIfLocalUrl(String fieldName, String urlValue) {
+        if (isLocalUrl(urlValue)) {
+            log.warn("PayHere {} uses localhost URL: {}", fieldName, urlValue);
+        }
+    }
+
+    private boolean isLocalUrl(String urlValue) {
+        if (isBlank(urlValue)) {
+            return false;
+        }
+
+        try {
+            URI uri = new URI(urlValue);
+            String host = uri.getHost();
+            if (host == null) {
+                return false;
+            }
+            return "localhost".equalsIgnoreCase(host)
+                    || host.startsWith("127.")
+                    || "0.0.0.0".equals(host);
+        } catch (URISyntaxException ex) {
+            return false;
+        }
+    }
+
+    private String extractUrlHost(String urlValue, String fieldName) {
+        try {
+            URI uri = new URI(urlValue);
+            if (isBlank(uri.getScheme()) || isBlank(uri.getHost())) {
+                throw new IllegalStateException("PayHere " + fieldName + " must be an absolute URL.");
+            }
+            return uri.getHost();
+        } catch (URISyntaxException ex) {
+            throw new IllegalStateException("PayHere " + fieldName + " is not a valid URL.");
         }
     }
 
@@ -250,13 +409,13 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void validateNotifyConfig() {
-        if (isBlank(payHereProperties.getMerchantId()) || isBlank(payHereProperties.getMerchantSecret())) {
+        if (isBlank(payHereProperties.getMerchantId()) || isBlank(resolveMerchantSecret())) {
             throw new IllegalStateException("PayHere notify configuration is incomplete.");
         }
     }
 
     private void validateNotifySignature(PayHereNotifyRequest request) {
-        String secretMd5 = md5(payHereProperties.getMerchantSecret()).toUpperCase(Locale.ROOT);
+        String secretMd5 = md5(resolveMerchantSecret()).toUpperCase(Locale.ROOT);
         String rawChecksum = request.getMerchantId()
                 + request.getOrderId()
                 + request.getPayhereAmount()
@@ -381,6 +540,32 @@ public class PaymentServiceImpl implements PaymentService {
         return md5(rawHash).toUpperCase(Locale.ROOT);
     }
 
+    private String generateUniqueOrderId() {
+        String orderId;
+        do {
+            orderId = "PH_ORDER_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        } while (paymentRepository.existsByOrderId(orderId));
+        return orderId;
+    }
+
+    private String generateUniqueTransactionId() {
+        String transactionId;
+        do {
+            transactionId = "txn_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        } while (paymentRepository.existsByTransactionId(transactionId));
+        return transactionId;
+    }
+
+    private String resolveMerchantSecret() {
+        String configuredSecret = payHereProperties.getMerchantSecret();
+        if (isBlank(configuredSecret)) {
+            return configuredSecret;
+        }
+
+        // Return the exact secret defined in properties; do not attempt to decode it.
+        return configuredSecret.trim();
+    }
+
     private String md5(String value) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -424,5 +609,10 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment getPaymentByAppointmentId(Long appointmentId) {
         return paymentRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found for Appointment ID: " + appointmentId));
+    }
+
+    @Override
+    public List<Payment> getAllPayments() {
+        return paymentRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
     }
 }

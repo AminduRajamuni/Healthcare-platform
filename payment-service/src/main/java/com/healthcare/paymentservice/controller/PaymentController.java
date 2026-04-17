@@ -1,5 +1,9 @@
 package com.healthcare.paymentservice.controller;
 
+import java.net.URI;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +34,9 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
     @PostMapping
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
@@ -37,7 +44,7 @@ public class PaymentController {
     }
 
     @PostMapping("/payhere/initiate")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
     public ResponseEntity<PayHereInitiateResponse> initiatePayHerePayment(
             @Valid @RequestBody PayHereInitiateRequest request) {
         return new ResponseEntity<>(paymentService.initiatePayHerePayment(request), HttpStatus.CREATED);
@@ -84,13 +91,23 @@ public class PaymentController {
     }
 
     @GetMapping("/payhere/return")
-    public ResponseEntity<String> handlePayHereReturn() {
-        return ResponseEntity.ok("Returned from PayHere. Please check payment status from the application.");
+    public ResponseEntity<Void> handlePayHereReturn() {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/patient"))
+                .build();
     }
 
     @GetMapping("/payhere/cancel")
-    public ResponseEntity<String> handlePayHereCancel() {
-        return ResponseEntity.ok("Payment cancelled on PayHere. You can retry the payment from the application.");
+    public ResponseEntity<Void> handlePayHereCancel() {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/patient"))
+                .build();
+    }
+
+    @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Payment>> getAllPayments() {
+        return ResponseEntity.ok(paymentService.getAllPayments());
     }
 
     @GetMapping("/{id}")
@@ -112,7 +129,7 @@ public class PaymentController {
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN') or hasRole('DOCTOR')")
     public ResponseEntity<Payment> getPaymentByAppointmentId(@PathVariable Long appointmentId) {
         return ResponseEntity.ok(paymentService.getPaymentByAppointmentId(appointmentId));
     }
