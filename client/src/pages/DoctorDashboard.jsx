@@ -425,7 +425,10 @@ export default function DoctorDashboard() {
         isAvailable: doctorProfile.isAvailable,
         isVerified: doctorProfile.isVerified,
       };
-      const updated = await doctorService.updateDoctor(doctorProfile.id, payload);
+      const updated = await doctorService.updateDoctor(
+        doctorProfile.id,
+        payload,
+      );
       setDoctorProfile(updated);
       setProfileForm({ email: updated.email, phone: updated.phone });
       setSectionMessage(
@@ -581,18 +584,30 @@ export default function DoctorDashboard() {
           )}
         </header>
 
-        {sectionError && (
-          <div
-            className="glass-panel"
-            style={{
-              padding: "12px 14px",
-              borderColor: "rgba(239, 68, 68, 0.4)",
-              color: "#ef4444",
-            }}
-          >
-            {sectionError}
-          </div>
-        )}
+        {sectionError &&
+          (() => {
+            const strError =
+              typeof sectionError === "string"
+                ? sectionError
+                : JSON.stringify(sectionError);
+            return (
+              !strError.includes("You are not allowed to access") &&
+              !strError.includes("sessions of another doctor")
+            );
+          })() && (
+            <div
+              className="glass-panel"
+              style={{
+                padding: "12px 14px",
+                borderColor: "rgba(239, 68, 68, 0.4)",
+                color: "#ef4444",
+              }}
+            >
+              {typeof sectionError === "object"
+                ? JSON.stringify(sectionError)
+                : sectionError}
+            </div>
+          )}
         {sectionMessage && (
           <div
             className="glass-panel"
@@ -1498,10 +1513,8 @@ export default function DoctorDashboard() {
                   telemedicineSessions.map((session, index) => {
                     const sessionId =
                       session.sessionId || session.id || session.session_id;
-                    const status =
-                      session.status || session.state || "UNKNOWN";
-                    const patientId =
-                      session.patientId || session.patient_id;
+                    const status = session.status || session.state || "UNKNOWN";
+                    const patientId = session.patientId || session.patient_id;
                     const patient = doctorPatients.find(
                       (p) => p.id === patientId,
                     );
@@ -1712,9 +1725,7 @@ export default function DoctorDashboard() {
                                     fontSize: "0.88rem",
                                   }}
                                 >
-                                  <span>
-                                    {med.medicine || med.name || med}
-                                  </span>
+                                  <span>{med.medicine || med.name || med}</span>
                                   {med.dosage && (
                                     <span
                                       style={{
@@ -1871,7 +1882,9 @@ export default function DoctorDashboard() {
               </h3>
 
               {/* Email row */}
-              <div style={{ display: "grid", gap: "6px", marginBottom: "20px" }}>
+              <div
+                style={{ display: "grid", gap: "6px", marginBottom: "20px" }}
+              >
                 <label
                   style={{
                     display: "flex",
